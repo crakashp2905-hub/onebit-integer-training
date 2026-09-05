@@ -1,0 +1,80 @@
+[{"stream_name":"stdout","time":0.724627015,"data":"======================================================================\n"}
+,{"stream_name":"stdout","time":0.724661765,"data":"mounted inputs:\n"}
+,{"stream_name":"stdout","time":0.747420625,"data":"  /kaggle/input/datasets/\n"}
+,{"stream_name":"stdout","time":0.747447111,"data":"  /kaggle/input/datasets/crakashpreetham/\n"}
+,{"stream_name":"stdout","time":0.747461985,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/\n"}
+,{"stream_name":"stdout","time":0.747466013,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data/\n"}
+,{"stream_name":"stdout","time":0.747470226,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data/__init__.py  [0 B]\n"}
+,{"stream_name":"stdout","time":0.74747467,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data/mnist.py  [3100 B]\n"}
+,{"stream_name":"stdout","time":0.747489739,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data/tinystories.py  [4266 B]\n"}
+,{"stream_name":"stdout","time":0.747494166,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/\n"}
+,{"stream_name":"stdout","time":0.747498181,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/convex_problem.py  [4938 B]\n"}
+,{"stream_name":"stdout","time":0.74750258,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m0_characterize.py  [5768 B]\n"}
+,{"stream_name":"stdout","time":0.747514205,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m1_convex.py  [15640 B]\n"}
+,{"stream_name":"stdout","time":0.74758354,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m1_sensitivity.py  [3380 B]\n"}
+,{"stream_name":"stdout","time":0.74759044,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m1_spectrum.py  [4338 B]\n"}
+,{"stream_name":"stdout","time":0.747594797,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m2_mnist.py  [9876 B]\n"}
+,{"stream_name":"stdout","time":0.747679542,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m3_baseline.py  [7377 B]\n"}
+,{"stream_name":"stdout","time":0.74769584,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m5_ladder.py  [11171 B]\n"}
+,{"stream_name":"stdout","time":0.74770054,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m5_lr_control.py  [4203 B]\n"}
+,{"stream_name":"stdout","time":0.747715426,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m5_lr_seed3.py  [2434 B]\n"}
+,{"stream_name":"stdout","time":0.747720035,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/repro.py  [4009 B]\n"}
+,{"stream_name":"stdout","time":0.747762198,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/models/\n"}
+,{"stream_name":"stdout","time":0.747767869,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/models/__init__.py  [335 B]\n"}
+,{"stream_name":"stdout","time":0.748062161,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/models/quant_gpt.py  [6643 B]\n"}
+,{"stream_name":"stdout","time":0.748076492,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/models/quant_mlp.py  [6040 B]\n"}
+,{"stream_name":"stdout","time":0.748081309,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/optim/\n"}
+,{"stream_name":"stdout","time":0.748085175,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/optim/__init__.py  [122 B]\n"}
+,{"stream_name":"stdout","time":0.748088672,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/optim/int_sgd.py  [12557 B]\n"}
+,{"stream_name":"stdout","time":0.748104528,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/\n"}
+,{"stream_name":"stdout","time":0.748108882,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/__init__.py  [1028 B]\n"}
+,{"stream_name":"stdout","time":0.748112754,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/config.py  [5431 B]\n"}
+,{"stream_name":"stdout","time":0.748116159,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/error_feedback.py  [3377 B]\n"}
+,{"stream_name":"stdout","time":0.748119698,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/quantizers.py  [6652 B]\n"}
+,{"stream_name":"stdout","time":0.748123075,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/registry.py  [4562 B]\n"}
+,{"stream_name":"stdout","time":0.748126423,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/round.py  [3063 B]\n"}
+,{"stream_name":"stdout","time":0.74812988,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/scale.py  [6078 B]\n"}
+,{"stream_name":"stdout","time":0.748133283,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/ste.py  [4971 B]\n"}
+,{"stream_name":"stdout","time":0.748138525,"data":"======================================================================\n"}
+,{"stream_name":"stdout","time":0.755693624,"data":"code root: /kaggle/input/datasets/crakashpreetham/onebit-ladder-code\n"}
+,{"stream_name":"stdout","time":5.784775667,"data":"torch 2.10.0+cu128 | cuda available: True\n"}
+,{"stream_name":"stderr","time":5.805718135,"data":"/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py:435: UserWarning: \n"}
+,{"stream_name":"stderr","time":5.806641561,"data":"    Found GPU0 Tesla P100-PCIE-16GB which is of cuda capability 6.0.\n"}
+,{"stream_name":"stderr","time":5.806646472,"data":"    Minimum and Maximum cuda capability supported by this version of PyTorch is\n"}
+,{"stream_name":"stderr","time":5.80664986,"data":"    (7.0) - (12.0)\n"}
+,{"stream_name":"stderr","time":5.806652855,"data":"    \n"}
+,{"stream_name":"stderr","time":5.806656044,"data":"  queued_call()\n"}
+,{"stream_name":"stderr","time":5.806659101,"data":"/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py:435: UserWarning: \n"}
+,{"stream_name":"stderr","time":5.806662206,"data":"    Please install PyTorch with a following CUDA\n"}
+,{"stream_name":"stderr","time":5.80666506,"data":"    configurations:  12.6 following instructions at\n"}
+,{"stream_name":"stderr","time":5.806667903,"data":"    https://pytorch.org/get-started/locally/\n"}
+,{"stream_name":"stderr","time":5.806670925,"data":"    \n"}
+,{"stream_name":"stderr","time":5.806673765,"data":"  queued_call()\n"}
+,{"stream_name":"stderr","time":5.806682368,"data":"/usr/local/lib/python3.12/dist-packages/torch/cuda/__init__.py:435: UserWarning: \n"}
+,{"stream_name":"stderr","time":5.806685482,"data":"Tesla P100-PCIE-16GB with CUDA capability sm_60 is not compatible with the current PyTorch installation.\n"}
+,{"stream_name":"stderr","time":5.80668853,"data":"The current PyTorch install supports CUDA capabilities sm_70 sm_75 sm_80 sm_86 sm_90 sm_100 sm_120.\n"}
+,{"stream_name":"stderr","time":5.80669151,"data":"If you want to use the Tesla P100-PCIE-16GB GPU with PyTorch, please check the instructions at https://pytorch.org/get-started/locally/\n"}
+,{"stream_name":"stderr","time":5.806694498,"data":"\n"}
+,{"stream_name":"stderr","time":5.80669724,"data":"  queued_call()\n"}
+,{"stream_name":"stdout","time":5.807323756,"data":"device: Tesla P100-PCIE-16GB\n"}
+,{"stream_name":"stdout","time":5.807339365,"data":"matmul precision: highest (must be 'highest' -- TF32 would stop the FP32 arm from being FP32)\n"}
+,{"stream_name":"stdout","time":5.907503887,"data":"token budget: 20,480,000 tokens/run (10x the CPU ladder)\n"}
+,{"stream_name":"stdout","time":5.907539583,"data":"results -\u003e /kaggle/working  cache -\u003e /kaggle/working/cache\n"}
+,{"stream_name":"stdout","time":5.90755062,"data":"======================================================================\n"}
+,{"stream_name":"stdout","time":10.909006272,"data":"[sleep guard] keep-awake request NOT AVAILABLE -- scoped to this process, power plan untouched\n"}
+,{"stream_name":"stdout","time":11.21838426,"data":"downloading https://huggingface.co/datasets/roneneldan/TinyStories/resolve/main/TinyStoriesV2-GPT4-valid.txt\n"}
+,{"stream_name":"stdout","time":12.871970899,"data":"  wrote /kaggle/working/cache/tinystories_valid.txt (22.5 MB)\n"}
+,{"stream_name":"stdout","time":38.724168042,"data":"[m5] 12 configs x 3 seeds; 0 already done, 36 to run\n"}
+,{"stream_name":"stdout","time":38.724223794,"data":"[m5] budget 20,480,000 tokens/run, threads=4\n"}
+,{"stream_name":"stdout","time":38.724230986,"data":"\n"}
+,{"stream_name":"stdout","time":3380.61512776,"data":"  [1/36] R0_fp32              seed0 ppl     7.65 froz 0.000 220.8 cpu-min (56 wall) ETA 32.5 h*\n"}
+,{"stream_name":"stdout","time":6644.53905472,"data":"  [2/36] R0_fp32              seed1 ppl     7.60 froz 0.000 215.6 cpu-min (54 wall) ETA 31.2 h*\n"}
+,{"stream_name":"stdout","time":9941.597138623,"data":"  [3/36] R0_fp32              seed2 ppl     7.66 froz 0.000 217.8 cpu-min (55 wall) ETA 30.3 h*\n"}
+,{"stream_name":"stdout","time":13556.604992634,"data":"  [4/36] R1_ternary           seed0 ppl     9.85 froz 0.000 238.8 cpu-min (60 wall) ETA 30.0 h*\n"}
+,{"stream_name":"stdout","time":17089.208717567,"data":"  [5/36] R1_ternary           seed1 ppl     9.90 froz 0.000 233.4 cpu-min (59 wall) ETA 29.4 h*\n"}
+,{"stream_name":"stdout","time":20642.210257046,"data":"  [6/36] R1_ternary           seed2 ppl     9.77 froz 0.000 234.7 cpu-min (59 wall) ETA 28.6 h*\n"}
+,{"stream_name":"stdout","time":25213.554489897,"data":"  [7/36] R2_act8              seed0 ppl     9.88 froz 0.000 301.9 cpu-min (76 wall) ETA 29.0 h*\n"}
+,{"stream_name":"stdout","time":29770.56109953,"data":"  [8/36] R2_act8              seed1 ppl     9.82 froz 0.000 300.9 cpu-min (76 wall) ETA 28.9 h*\n"}
+,{"stream_name":"stdout","time":34385.638991699,"data":"  [9/36] R2_act8              seed2 ppl     9.84 froz 0.000 304.8 cpu-min (77 wall) ETA 28.6 h*\n"}
+,{"stream_name":"stdout","time":39120.41209742,"data":"  [10/36] R2p5_pow2scales      seed0 ppl     9.26 froz 0.000 312.6 cpu-min (79 wall) ETA 28.2 h*\n"}
+]
