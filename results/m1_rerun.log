@@ -1,0 +1,188 @@
+[repro] torch threads pinned to 4
+==============================================================================
+STEP 1 -- verify the problem against its own closed form
+==============================================================================
+  kappa=1.0    measured=1.0000  |grad(w*)|_rel=0.0e+00  gap(w*)=0.0e+00   OK
+  kappa=10.0   measured=10.0000  |grad(w*)|_rel=0.0e+00  gap(w*)=0.0e+00   OK
+  kappa=100.0  measured=100.0000  |grad(w*)|_rel=0.0e+00  gap(w*)=0.0e+00   OK
+
+==============================================================================
+STEP 2 -- unquantized run must reproduce textbook GD convergence
+==============================================================================
+   kappa   measured rate/step   theory rho^2    ratio
+      10             1.000170       0.669421   1.4941
+     100             0.960347       0.960788   0.9995
+  -> DOES NOT MATCH THEORY
+
+==============================================================================
+STEP 3 -- the sweep
+==============================================================================
+  kappa=10 done (57 runs, 498s)
+  kappa=100 done (114 runs, 812s)
+  wrote results/m1_convex.csv (114 rows)
+  wrote results/m1_convex_curves.csv (13794 rows)
+
+------------------------------------------------------------------------------
+kappa = 10   (mean over 3 seeds; lr = 0.18182)
+------------------------------------------------------------------------------
+  fp32 shadow: final rel_gap = 3.187e-14
+
+  bits     delta |        RTN         SR         EF  <- final rel_gap
+    16  2.44e-04 |   6.57e-09   1.53e-08   1.70e-08
+    12  3.91e-03 |   1.82e-06   3.65e-06   4.15e-06
+    10  1.57e-02 |   2.79e-05   6.16e-05   6.40e-05
+     8  6.30e-02 |   4.35e-04   9.72e-04   1.08e-03
+     6  2.58e-01 |   7.28e-03   1.49e-02   2.09e-02
+     4  1.14e+00 |   1.22e-01   3.22e-01   3.74e-01
+
+  bits |        RTN         SR         EF  <- final ||w-w*||_inf in GRID STEPS
+    16 |        1.5        1.5        1.4
+    12 |        1.6        1.5        1.2
+    10 |        1.4        1.6        1.3
+     8 |        1.4        1.7        1.4
+     6 |        1.3        1.6        1.4
+     4 |        1.0        1.7        1.3
+
+  bits |        RTN         SR         EF  <- frozen coord fraction
+    16 |      1.000      0.680      0.474
+    12 |      1.000      0.681      0.501
+    10 |      1.000      0.681      0.487
+     8 |      1.000      0.681      0.501
+     6 |      1.000      0.681      0.490
+     4 |      1.000      0.680      0.492
+
+------------------------------------------------------------------------------
+kappa = 100   (mean over 3 seeds; lr = 0.01980)
+------------------------------------------------------------------------------
+  fp32 shadow: final rel_gap = 3.652e-13
+
+  bits     delta |        RTN         SR         EF  <- final rel_gap
+    16  2.44e-04 |   1.83e-07   2.45e-08   3.35e-08
+    12  3.91e-03 |   4.38e-05   6.12e-06   1.02e-05
+    10  1.57e-02 |   6.32e-04   1.12e-04   1.53e-04
+     8  6.30e-02 |   4.02e-03   1.60e-03   1.65e-03
+     6  2.58e-01 |   1.72e-02   2.47e-02   5.18e-02
+     4  1.14e+00 |   1.94e-01   4.99e-01   8.34e-01
+
+  bits |        RTN         SR         EF  <- final ||w-w*||_inf in GRID STEPS
+    16 |        8.3        3.3        1.3
+    12 |        9.7        3.1        1.7
+    10 |       10.7        3.2        1.6
+     8 |        6.8        3.6        1.4
+     6 |        4.7        3.5        1.4
+     4 |        2.0        3.1        1.4
+
+  bits |        RTN         SR         EF  <- frozen coord fraction
+    16 |      0.282      0.677      0.446
+    12 |      0.319      0.669      0.476
+    10 |      0.329      0.670      0.428
+     8 |      0.565      0.688      0.463
+     6 |      1.000      0.686      0.452
+     4 |      1.000      0.688      0.450
+
+==============================================================================
+STEP 4 -- law checks
+==============================================================================
+  L1 freeze law: 0 violations across 36 RTN runs (50 steps x 1000 coords each) -> HOLDS
+  saturation: max shadow_sat_frac = 0.00e+00 -> no clipping, analysis clean
+
+  L2 RTN freeze fraction (1.000 = complete stop; depends on grid step
+     vs curvature spectrum, NOT on bit-width alone):
+    kappa= 10  b4=1.000 b6=1.000 b8=1.000 b10=1.000 b12=1.000 b16=1.000
+    kappa=100  b4=1.000 b6=1.000 b8=0.565 b10=0.329 b12=0.319 b16=0.282
+
+  L3 EF error vs delta (should scale linearly -- 4x coarser grid, 4x error):
+    kappa= 10  b4=1.53e+00 b6=3.69e-01 b8=8.62e-02 b10=2.04e-02 b12=4.59e-03 b16=3.45e-04
+             error-ratio / delta-ratio: 1.07 0.96 0.95 0.90 1.20   (1.00 = exactly linear)
+    kappa=100  b4=1.58e+00 b6=3.71e-01 b8=8.94e-02 b10=2.53e-02 b12=6.73e-03 b16=3.21e-04
+             error-ratio / delta-ratio: 1.04 0.99 1.14 1.07 0.76   (1.00 = exactly linear)
+
+==============================================================================
+STEP 5 -- error GEOMETRY: where does each mode put its error?
+==============================================================================
+  kappa=100, bits=8. Fraction of squared error energy per
+  curvature band (eigenvalues log-spaced, so each band holds ~25% of coords).
+
+  mode  |w-w*|_inf  A-norm err |     lam 1-3    lam 3-10   lam 10-32  lam 32-100
+   rtn   4.308e-01   8.929e+00 |       0.926       0.044       0.006       0.012
+    sr   2.376e-01   5.730e+00 |       0.595       0.246       0.078       0.078
+    ef   8.938e-02   5.719e+00 |       0.115       0.178       0.150       0.531
+
+  Flat row = isotropic error. Right-heavy = error in stiff directions,
+  which the A-norm objective charges the most for.
+input perturbation (relative, in A): 7.682e-07
+(this is float32 roundoff -- ~6 ulp at |A|max)
+
+  bits mode    rel_gap(A)    rel_gap(B)   rel diff  amplification
+    16  rtn  2.218402e-07  1.826677e-07   2.14e-01        279139x
+    16   sr  2.425262e-08  2.200836e-08   1.02e-01        132735x
+    16   ef  4.498842e-08  3.346799e-08   3.44e-01        448064x
+    12  rtn  4.266815e-05  4.384764e-05   2.69e-02         35014x
+    12   sr  5.872090e-06  6.629583e-06   1.14e-01        148728x
+    12   ef  1.040491e-05  1.019302e-05   2.08e-02         27059x
+    10  rtn  5.396800e-04  6.319427e-04   1.46e-01        190042x
+    10   sr  8.986474e-05  1.218461e-04   2.62e-01        341654x
+    10   ef  1.472298e-04  1.527953e-04   3.64e-02         47412x
+     8  rtn  4.020044e-03  4.020044e-03   2.27e-07             0x
+     8   sr  1.599528e-03  1.655467e-03   3.38e-02         43984x
+     8   ef  2.083114e-03  1.649038e-03   2.63e-01        342638x
+     6  rtn  1.723828e-02  1.723828e-02   1.24e-09             0x
+     6   sr  2.704343e-02  2.509532e-02   7.76e-02        101047x
+     6   ef  5.408889e-02  5.178296e-02   4.45e-02         57964x
+     4  rtn  1.944782e-01  1.944782e-01   3.41e-08             0x
+     4   sr  5.129192e-01  5.129191e-01   6.16e-08             0x
+     4   ef  8.495582e-01  8.341924e-01   1.84e-02         23977x
+
+wrote C:\Users\CR Ramesh\projects\onebit-integer-training\results\m1_sensitivity.csv (18 rows)
+
+RESOLUTION FLOOR -- an effect must exceed this to be believable:
+   rtn: median     2.7%   worst    21.4%
+    sr: median    10.2%   worst    26.2%
+    ef: median     4.5%   worst    34.4%
+
+Any SR/EF comparison with a margin below its mode's floor is NOT
+resolved by this experiment, regardless of seed count.
+[repro] torch threads pinned to 4
+
+  logspace done (36 runs)
+  powerlaw done (72 runs)
+  bulk_outlier done (108 runs)
+  wrote C:\Users\CR Ramesh\projects\onebit-integer-training\results\m1_spectrum.csv (108 rows)
+
+L1 freeze law across all spectra: 0 violations -> HOLDS
+
+==============================================================================
+F1 -- does 'RTN wins IFF it fully freezes' survive?
+==============================================================================
+       spectrum bits  RTNfroz        RTN         SR         EF  winner    F1
+       logspace   16    0.282   1.83e-07   2.45e-08   3.35e-08      sr    OK
+       logspace   10    0.329   6.32e-04   1.12e-04   1.53e-04      sr    OK
+       logspace    8    0.565   4.02e-03   1.60e-03   1.65e-03      sr    OK
+       logspace    4    1.000   1.94e-01   4.99e-01   8.34e-01     rtn    OK
+       powerlaw   16    0.596   8.70e-08   2.74e-08   6.41e-08      sr    OK
+       powerlaw   10    1.000   5.48e-04   1.07e-04   2.44e-04      sr  FAIL
+       powerlaw    8    1.000   4.22e-03   1.90e-03   2.13e-03      sr  FAIL
+       powerlaw    4    1.000   1.69e-01   5.24e-01   1.13e+00     rtn    OK
+   bulk_outlier   16    1.000   5.04e-06   6.64e-08   1.70e-07      sr  FAIL
+   bulk_outlier   10    1.000   3.56e-02   2.04e-04   5.78e-03      sr  FAIL
+   bulk_outlier    8    1.000   3.39e-01   5.32e-03   7.65e-02      sr  FAIL
+   bulk_outlier    4    1.000   1.00e+00   9.96e-01   3.85e+01      sr  FAIL
+
+  F1 holds in 6/12 cells
+
+==============================================================================
+F2 -- is EF still tighter than SR in the infinity norm?
+==============================================================================
+       spectrum bits  SR steps  EF steps   ratio   margin  resolved
+       logspace   16      3.33      1.31    2.53   60.5%       yes
+       logspace   10      3.18      1.61    1.97   49.3%       yes
+       logspace    8      3.58      1.42    2.52   60.3%       yes
+       logspace    4      3.14      1.38    2.27   56.0%       yes
+       powerlaw   16      4.64      1.51    3.07   67.5%       yes
+       powerlaw   10      4.16      1.53    2.72   63.2%       yes
+       powerlaw    8      4.10      1.37    3.00   66.6%       yes
+       powerlaw    4      4.53      1.70    2.67   62.5%       yes
+   bulk_outlier   16      4.84      0.96    5.04   80.2%       yes
+   bulk_outlier   10      4.56      2.33    1.96   48.9%       yes
+   bulk_outlier    8      5.43      1.99    2.72   63.3%       yes
+   bulk_outlier    4      3.89      2.44    1.59   37.3%       yes
