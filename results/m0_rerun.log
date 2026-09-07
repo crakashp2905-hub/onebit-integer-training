@@ -1,0 +1,16 @@
+[repro] torch threads pinned to 4
+wrote C:\Users\CR Ramesh\projects\onebit-integer-training\results\m0_quantizer_error.csv (222 rows)
+
+Is power-of-two scaling more expensive than one bit of width?
+(NRMSE, gaussian, per-row scaling; lower is better)
+
+ bits   float scale     pow2/ceil    pow2/round   float @ bits-1
+    8       0.00788       0.00989       0.00938          0.01593
+    6       0.03231       0.04033       0.03626          0.06685
+    4       0.14307       0.21537       0.14434          0.33406
+    3       0.33406       0.56205       0.29994          0.86935
+
+Granularity vs outliers (int8, float scale):
+  tensor    gaussian 0.01059   outliers 0.11378
+  row       gaussian 0.00788   outliers 0.04498
+  block64   gaussian 0.00594   outliers 0.01651
