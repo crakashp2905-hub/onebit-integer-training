@@ -1,0 +1,9 @@
+config,spec,fp_mul,raw_mul,transcendental,add,mul_block_linears,mul_attention,mul_layernorm,mul_head_embed,mul_other
+R0_fp32,R0_fp32 [none],5138546688,5138546688,6815744,2885760,4076863488,457703424,0,603979776,0
+R1_ternary,R1_ternary [w=ternary|tensor|float|nearest|absmean|ste=identity],3790209048,5143855128,6815744,2885760,2728525848,457703424,0,603979776,0
+R2_act8,R2_act8 [w=ternary|tensor|float|nearest|absmean|ste=identity a=int8|row|float|nearest|absmax|ste=identity],3798478872,5152124952,6815744,2885760,2736795672,457703424,0,603979776,0
+R2p5_pow2scales,R2p5_pow2scales [w=ternary|tensor|pow2/ceil|nearest|absmean|ste=identity a=int8|row|pow2/ceil|nearest|absmax|ste=identity],3793170456,5152124952,6815744,2898072,2731487256,457703424,0,603979776,0
+R2p9_act4,R2p9_act4 [w=ternary|tensor|float|nearest|absmean|ste=identity a=int4|row|float|nearest|absmax|ste=identity],3798478872,5152124952,6815744,2885760,2736795672,457703424,0,603979776,0
+R3b_wgrad8,R3b_wgrad8 [w=ternary|tensor|float|nearest|absmean|ste=identity a=int8|row|float|nearest|absmax|ste=identity dy=int8|row|float|stochastic|absmax|ste=identity wg=int8|tensor|float|stochastic|absmax|ste=identity],1097981976,5162754072,6815744,8194176,36298776,457703424,0,603979776,0
+R5_shadow8ef,R5_shadow8ef [w=ternary|tensor|float|nearest|absmean|ste=identity a=int8|row|float|nearest|absmax|ste=identity dy=int8|row|float|stochastic|absmax|ste=identity wg=int8|tensor|float|stochastic|absmax|ste=identity shadow=8b/ef],1097981976,5162754072,6815744,8194176,36298776,457703424,0,603979776,0
+R7_alllayers,R7_alllayers [w=ternary|tensor|float|nearest|absmean|ste=identity a=int8|row|float|nearest|absmax|ste=identity dy=int8|row|float|stochastic|absmax|ste=identity wg=int8|tensor|float|stochastic|absmax|ste=identity],1097981976,5162754072,6815744,8194176,36298776,457703424,0,603979776,0
