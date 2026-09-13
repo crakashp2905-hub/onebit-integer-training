@@ -3,3 +3,13 @@ __pycache__/
 .pytest_cache/
 results/*.log
 results/*.err
+
+# Regenerable caches. The FROZEN CORPUS is deliberately NOT ignored:
+# data/cache/bpe_2048.json and data/cache/tokens_2048.npz define the exact
+# token stream every result in results/ was measured against, and the
+# methodology is "tokenize once, freeze, replay". Losing them would make new
+# runs incomparable with old ones, and this tree has already been destroyed
+# twice. The batch-offset tensors and the raw corpus text below are pure
+# functions of those two files and of a seed, so they are not kept.
+data/cache/*.pt
+data/cache/tinystories_valid.txt
