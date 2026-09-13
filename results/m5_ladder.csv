@@ -1,0 +1,1 @@
+config,spec,seed,steps,tokens,val_loss,val_ppl,diverged,frozen_frac_tail,grad_zero_frac_tail,n_quant_sites,max_zero_frac,max_sat_frac,tokens_per_cpu_sec,cpu_seconds,tokens_per_sec,seconds,wall_over_cpu,threads

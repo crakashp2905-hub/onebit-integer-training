@@ -235,6 +235,97 @@ arithmetic. Any future GPU work needs a much larger batch.
 
 ---
 
+## M4 — the float-op audit
+
+```
+python experiments/m4_audit.py      ->  results/m4_audit.csv
+```
+
+This was in the original build order between M3 and M5, and got skipped. Without
+it the project could report what quantization **costs** (every loss number
+above) but not what it **bought** — and "multiplier-free" is a claim about
+operations, not about loss.
+
+The counter is a `TorchDispatchMode` that attributes every op to a module across
+both the forward and the backward pass. It reports two quantities:
+
+- **`fp_mul`** — the FP multiplies a *real* integer kernel would still perform.
+  A ternary matmul contributes 0 (multiplying by {−1, 0, +1} is a
+  select/negate/skip); its requantization scale costs one FP multiply per output
+  element **unless** that scale is a power of two. This is the number that turns
+  "we constrained the scales to powers of two" into a measurement.
+- **`raw_mul`** — what Track A literally executes. Simulated quantization runs on
+  FP units, so this barely moves. That is exactly why `fp_mul` has to be
+  modelled rather than measured, and it is the honest statement of what a
+  fake-quant study can and cannot claim.
+
+One training step, batch 4 × ctx 128:
+
+| config | fp_mul | vs fp32 | ppl cost @20.5M |
+|---|---:|---:|---:|
+| R0_fp32 | 5,138,546,688 | 100.0% | — |
+| R1_ternary | 3,790,209,048 | 73.8% | +28.8% |
+| R2_act8 | 3,798,478,872 | 73.9% | +28.9% |
+| R2p5_pow2scales | 3,793,170,456 | 73.8% | +21.2% |
+| R3b_wgrad8 | 1,097,981,976 | **21.4%** | **~0%** |
+| R5_shadow8ef | 1,097,981,976 | 21.4% | +32.8% |
+| R6_attn8 | 958,267,416 | 18.6% | *running* |
+| R7_head8 | 758,975,000 | 14.8% | *running* |
+| R7_everything_pow2 | 749,668,888 | **14.6%** | *running* |
+
+### The ladder is upside down
+
+**Ternary weights cost +28.8% perplexity and remove only 26% of the multiplies.
+Gradient quantization costs nothing measurable and removes another 53 points.**
+
+The rung this project expected to break first is the one carrying most of the
+benefit; the rung everyone starts from is the expensive one. This is only
+visible because the audit exists — every loss-only view of the ladder gets the
+cost/benefit ordering backwards.
+
+The reason is structural, not a quirk of this model. R1 quantizes the *weight*,
+so it can only ever claim the one forward matmul. R3 quantizes the *gradient*,
+which is an operand of **both** backward matmuls — and the backward pass is two
+thirds of the arithmetic in a training step.
+
+### Where the residue lives
+
+Of the 1,097,981,976 multiplies that survived the full stack:
+
+| source | share | in the ladder? |
+|---|---:|---|
+| LM head (forward 201M + backward 403M) | **55%** | no — it was an `nn.Linear` |
+| attention QK^T and AV, all 6 layers | **42%** | no — R6, unbuilt |
+| everything else | 3% | — |
+
+97% of the remaining multiplies sat in two places no rung had ever touched, and
+the LM head's share was an accident of code structure: it was an `nn.Linear`
+buried in `QuantGPT.forward` rather than a `QuantLinear`. It has since been
+promoted to its own leaf module (R7) and attention quantization added (R6),
+taking the audited residue to 14.6%.
+
+### The irreducible part
+
+**6,815,744 transcendentals per step = 13,312 per token**, identical across
+every single rung — softmax `exp`/divide, LayerNorm `rsqrt`, GELU `erf`. No
+scaling scheme touches these. Only changing the architecture does. That is the
+floor the brief asked this project to locate, and it is the honest answer to
+"can a transformer be made multiplier-free": not this transformer.
+
+### A bug worth recording
+
+The first version set the quantized-operand flag in a forward hook only, so
+every backward matmul scored as full floating point and the audit reported 26%
+elimination for configs whose backward is largely integer. A second version kept
+that flag as a scalar — but attention contains `QuantLinear` children whose
+`pop` cleared it, and QK^T and AV run *after* `self.qkv` returns, so R6 would
+have measured as worth exactly zero. The flag is now a stack parallel to the
+label stack, and backward matmuls are scored conservatively: the integer flag is
+set only when *both* dgrad and wgrad qualify, so the audit can understate a
+rung's benefit but never overstate it.
+
+---
+
 ## Predictions made, and how they turned out
 
 | prediction | outcome |
@@ -247,8 +338,9 @@ arithmetic. Any future GPU work needs a much larger batch.
 | Error feedback beats stochastic rounding | **flipped three times**; dissolves at scale |
 | Momentum may rescue RTN latent weights | **half right** — degraded but learning |
 | Parallelism would speed the sweep | **wrong** — memory-bandwidth-bound, 0.97× |
+| (unstated, and wrong) that the ladder's rungs cost roughly in proportion to what they buy | **wrong** — ternary buys 26% for +28.8%, gradients buy 53% for free |
 
-Three held, four wrong, one half. The failures cluster: every one was a case of
+Three held, five wrong, one half. The failures cluster: every one was a case of
 generalizing from an instrument that could not support the generalization —
 a single spectrum, a single token budget, a single problem class.
 
@@ -256,11 +348,14 @@ a single spectrum, a single token budget, a single problem class.
 
 ## Open
 
-- **4-bit power-of-two scaling.** Untested, and M0 predicts this is where the
-  multiplier-free constraint starts to bite (+68% at 3 bits).
-- **R6 (matmul-free attention), R7 (norms, softmax, LM head).** Not started.
-  The attention matmuls are written out explicitly rather than via
-  `scaled_dot_product_attention` specifically so they remain quantizable.
+- **4-bit power-of-two scaling, R6 (attention), R7 (LM head).** Built and
+  audited; loss numbers at 20.5M tokens are **running now** and are the one gap
+  between the audit's cost column and its benefit column.
+- **Attention backward.** R6 quantizes the forward QK^T and AV only, so the
+  audit scores dQ/dK/dV as full FP. Roughly two thirds of attention's arithmetic
+  is therefore still unclaimed.
+- **The transcendentals.** 13,312 per token, untouched by every rung. Reaching
+  them means replacing softmax and LayerNorm, not rescaling them.
 - **R4 (quantized optimizer state).** IntSGD carries FP32 momentum; only the
   latent weight and weight gradient are quantized.
 - **The full ladder at 20.5M tokens.** Only 6 of 12 configs have GPU numbers;
