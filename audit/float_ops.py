@@ -104,15 +104,18 @@ class FloatOpCounter(TorchDispatchMode):
 
     def __init__(self) -> None:
         super().__init__()
-        self.stack: list[str] = []
+        # (label, operands_are_quantized, scales_are_pow2). A STACK, not two
+        # scalars: attention contains QuantLinear children, so a child's pop
+        # would otherwise clear the parent's flag and the QK^T / AV matmuls --
+        # which run AFTER self.qkv returns -- would always score as full FP.
+        # That silently zeroes the entire R6 benefit.
+        self.stack: list[tuple[str, bool, bool]] = []
         self.buckets: dict[str, Bucket] = collections.defaultdict(Bucket)
-        self.quant_matmul = False       # operands of the next matmul are quantized
-        self.pow2_scales = False        # requantization is a shift, not a multiply
         self._muted = 0
 
     # -- label stack ------------------------------------------------------
-    def push(self, label: str) -> None:
-        self.stack.append(label)
+    def push(self, label: str, quant: bool = False, pow2: bool = False) -> None:
+        self.stack.append((label, quant, pow2))
 
     def pop(self) -> None:
         if self.stack:
@@ -120,7 +123,15 @@ class FloatOpCounter(TorchDispatchMode):
 
     @property
     def label(self) -> str:
-        return self.stack[-1] if self.stack else "unattributed"
+        return self.stack[-1][0] if self.stack else "unattributed"
+
+    @property
+    def quant_matmul(self) -> bool:
+        return self.stack[-1][1] if self.stack else False
+
+    @property
+    def pow2_scales(self) -> bool:
+        return self.stack[-1][2] if self.stack else False
 
     def mute(self) -> "._Mute":
         return _Mute(self)
@@ -200,6 +211,15 @@ def _matmul_is_integer(mod) -> tuple[bool, bool]:
     An INT weight needs an INT activation too, otherwise the product is still
     float x int and a real kernel must do an FP multiply.
     """
+    attn = getattr(mod, "attn_spec", None)
+    if attn is not None:
+        # R6: QK^T and AV are activation x activation. There is no weight to
+        # make ternary, so BOTH operands must be integer -- this is the one
+        # place where the BitNet shortcut does not apply.
+        if attn.kind != "int":
+            return False, False
+        return True, attn.scale_mode == "pow2" and getattr(mod, "attn_scale_pow2", False)
+
     w = getattr(mod, "w_spec", None)
     a = getattr(mod, "a_spec", None)
     if w is None:
@@ -230,6 +250,10 @@ def _backward_matmul_is_integer(mod) -> tuple[bool, bool]:
     full floating point and the audit reported 26% elimination for a config
     whose backward is largely integer.
     """
+    # attention backward (dQ, dK, dV) is NOT quantized by R6 as implemented,
+    # so it is scored as full floating point. Understates R6, never overstates.
+    if getattr(mod, "attn_spec", None) is not None:
+        return False, False
     w = getattr(mod, "w_spec", None)
     a = getattr(mod, "a_spec", None)
     g = getattr(mod, "g_spec", None)
@@ -273,22 +297,18 @@ def attach_labels(model: torch.nn.Module, counter: FloatOpCounter) -> list:
         label = f"{name} [{kind}]"
 
         def _pre(m, i, lbl=label, c=counter):
-            c.push(lbl)
-            c.quant_matmul, c.pow2_scales = _matmul_is_integer(m)
+            c.push(lbl, *_matmul_is_integer(m))
 
         def _post(m, i, o, c=counter):
             c.pop()
-            c.quant_matmul = c.pow2_scales = False
 
         handles.append(mod.register_forward_pre_hook(_pre))
         handles.append(mod.register_forward_hook(_post))
         def _bpre(m, go, lbl=label + " bwd", c=counter):
-            c.push(lbl)
-            c.quant_matmul, c.pow2_scales = _backward_matmul_is_integer(m)
+            c.push(lbl, *_backward_matmul_is_integer(m))
 
         def _bpost(m, gi, go, c=counter):
             c.pop()
-            c.quant_matmul = c.pow2_scales = False
 
         handles.append(mod.register_full_backward_pre_hook(_bpre))
         handles.append(mod.register_full_backward_hook(_bpost))

@@ -47,6 +47,15 @@ ACT8 = QuantSpec(kind="int", bits=8, granularity="row", calib="absmax")
 ACT8_P2 = QuantSpec(kind="int", bits=8, granularity="row", calib="absmax",
                     scale_mode="pow2", pow2_mode="ceil")
 ACT4 = QuantSpec(kind="int", bits=4, granularity="row", calib="absmax")
+ACT4_P2 = QuantSpec(kind="int", bits=4, granularity="row", calib="absmax",
+                    scale_mode="pow2", pow2_mode="ceil")
+ATT8 = QuantSpec(kind="int", bits=8, granularity="row", calib="absmax")
+ATT8_P2 = QuantSpec(kind="int", bits=8, granularity="row", calib="absmax",
+                    scale_mode="pow2", pow2_mode="ceil")
+ATT4 = QuantSpec(kind="int", bits=4, granularity="row", calib="absmax")
+HEAD8 = QuantSpec(kind="int", bits=8, granularity="row", calib="absmax")
+HEAD8_P2 = QuantSpec(kind="int", bits=8, granularity="row", calib="absmax",
+                     scale_mode="pow2", pow2_mode="ceil")
 DY8 = QuantSpec(kind="int", bits=8, granularity="row", rounding="stochastic")
 WG8 = QuantSpec(kind="int", bits=8, granularity="tensor", rounding="stochastic")
 
@@ -60,6 +69,18 @@ def configs() -> list[LadderConfig]:
         LadderConfig(name="R2p5_pow2scales", w_spec=TERN_P2, a_spec=ACT8_P2),
         LadderConfig(name="R2p9_act4", w_spec=TERN, a_spec=ACT4),
         LadderConfig(name="R3b_wgrad8", **full),
+        # --- 4-bit multiplier-free: M0 predicts pow2 scaling bites HERE, not at 8
+        LadderConfig(name="R2p95_act4_pow2", w_spec=TERN_P2, a_spec=ACT4_P2),
+        # --- R6: the two activation x activation matmuls inside attention
+        LadderConfig(name="R6_attn8", **full, attn_spec=ATT8),
+        LadderConfig(name="R6p5_attn8_pow2", **full, attn_spec=ATT8_P2,
+                     attn_scale_pow2=True),
+        LadderConfig(name="R6_attn4", **full, attn_spec=ATT4),
+        # --- R7: the LM head, 55% of the residue and never before in the ladder
+        LadderConfig(name="R7_head8", **full, attn_spec=ATT8, head_spec=HEAD8),
+        LadderConfig(name="R7_everything_pow2", w_spec=TERN_P2, a_spec=ACT8_P2,
+                     g_spec=DY8, wg_spec=WG8, attn_spec=ATT8_P2,
+                     attn_scale_pow2=True, head_spec=HEAD8_P2),
         LadderConfig(name="R5_shadow8ef", **full, shadow_bits=8, shadow_mode="ef"),
         LadderConfig(name="R7_alllayers", **full, quantize_first_last=True),
     ]

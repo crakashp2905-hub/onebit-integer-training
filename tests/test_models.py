@@ -293,3 +293,97 @@ def test_activation_quantization_reaches_the_loss_not_just_the_tensor():
     assert devs[8] > 0, "8-bit activations did not change the logits at all"
     assert devs[4] > devs[8], f"4-bit should deviate more: {devs}"
     assert devs[2] > devs[4], f"2-bit should deviate more: {devs}"
+
+
+# ================================================ R6 attention / R7 LM head
+
+def _fp_mul(ladder):
+    """FP multiplies in one training step of the small decoder, per the M4 model."""
+    from audit import FloatOpCounter, attach_labels
+
+    torch.manual_seed(0)
+    m = QuantGPT(small_cfg(ladder), seed=0)
+    x = toks(2, 16, 128, seed=0)
+    c = FloatOpCounter()
+    h = attach_labels(m, c)
+    with c:
+        _, loss = m(x, x)
+        loss.backward()
+    for hh in h:
+        hh.remove()
+    return c.totals()["fp_mul"], c
+
+
+def test_r6_quantizes_both_attention_matmuls():
+    """R6 is the only rung with no weight to make ternary: QK^T and AV multiply
+    two ACTIVATIONS, so both operands must be integer or neither matmul is."""
+    ladder = LadderConfig(name="R6", attn_spec=ACT8)
+    x = toks(4, 16, 128, seed=0)
+    torch.manual_seed(0)
+    base = QuantGPT(small_cfg(LadderConfig()), seed=0).eval()
+    torch.manual_seed(0)
+    r6 = QuantGPT(small_cfg(ladder), seed=0).eval()
+    with torch.no_grad():
+        d = (r6(x)[0] - base(x)[0]).abs().max().item()
+    assert d > 0, "attn_spec changed nothing -- R6 is a silent no-op"
+    # all four operands must be registered, or a rung is half-wired
+    names = set(registry.sites())
+    for k in "qkva":
+        assert any(n.endswith(f"attn_{k}") for n in names), f"operand {k} unquantized"
+
+
+def test_r6_and_r7_each_remove_multiplies_the_audit_can_see():
+    """The reason the counter's quantized-flag had to become a STACK: attention
+    contains QuantLinear children, and a child's pop was clearing the parent's
+    flag, so QK^T and AV -- which run after self.qkv returns -- always scored as
+    full floating point and R6 measured as worth exactly zero."""
+    full = dict(w_spec=TERNARY, a_spec=ACT8, g_spec=DY8)
+    base, _ = _fp_mul(LadderConfig(name="b", **full))
+    r6, _ = _fp_mul(LadderConfig(name="r6", **full, attn_spec=ACT8))
+    r7, _ = _fp_mul(LadderConfig(name="r7", **full, attn_spec=ACT8, head_spec=ACT8))
+    assert r6 < base, f"R6 removed no multiplies: {r6} vs {base}"
+    assert r7 < r6, f"R7 removed no multiplies: {r7} vs {r6}"
+
+
+def test_lm_head_stays_tied_after_becoming_its_own_module():
+    """The head was promoted from a buried nn.Linear to a leaf module so R7 is
+    quantizable and attributable. Weight tying must survive that, or the
+    parameter count silently grows by a whole vocab x d_model table."""
+    m = QuantGPT(small_cfg(), seed=0)
+    assert m.head.weight is m.tok_emb.weight
+    n_tied = sum(p.numel() for p in m.parameters())
+    m2 = QuantGPT(GPTConfig(vocab_size=128, ctx=16, n_layer=2, n_head=2,
+                            d_model=32, tie_weights=False), seed=0)
+    assert sum(p.numel() for p in m2.parameters()) == n_tied + 128 * 32
+
+
+def test_r7_head_quantization_does_not_touch_the_embedding_lookup():
+    """Tied weights mean one tensor serves a gather and a matmul. Only the
+    matmul has anything to quantize; a gather is not a multiply."""
+    m = QuantGPT(small_cfg(LadderConfig(name="r7", head_spec=ACT8)), seed=0).eval()
+    before = m.tok_emb.weight.detach().clone()
+    with torch.no_grad():
+        m(toks(2, 16, 128))
+    assert torch.equal(m.tok_emb.weight, before), "the tied parameter was mutated"
+
+
+def test_pow2_attention_scale_is_actually_a_power_of_two():
+    """1/sqrt(head_dim) is a power of two only when head_dim is an EVEN power of
+    two. The real model uses head_dim=32, where 1/sqrt(32) = 2^-2.5, so this
+    rung genuinely changes the softmax temperature by 1.41x -- it is not
+    cosmetic. head_dim=16 is the control: there the exact scale is already a
+    shift and the rung must be a literal no-op.
+    """
+    def attn(d_model, n_head, p2):
+        ladder = LadderConfig(name="p", attn_spec=ACT8, attn_scale_pow2=p2)
+        cfg = GPTConfig(vocab_size=128, ctx=16, n_layer=2, n_head=n_head,
+                        d_model=d_model, ladder=ladder)
+        return QuantGPT(cfg, seed=0).blocks[0].attn
+
+    exact16, p2_16 = attn(32, 2, False).scale, attn(32, 2, True).scale
+    assert p2_16 == exact16 == 0.25, "head_dim=16 should already be a shift"
+
+    exact32, p2_32 = attn(64, 2, False).scale, attn(64, 2, True).scale
+    assert math.log2(p2_32) == int(math.log2(p2_32)), f"{p2_32} is not a power of two"
+    assert p2_32 != exact32, "head_dim=32 scale was left at the exact 2^-2.5"
+    assert 0.7 < p2_32 / exact32 < 1.5

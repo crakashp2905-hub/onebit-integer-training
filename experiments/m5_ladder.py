@@ -42,7 +42,12 @@ from models.quant_mlp import LadderConfig
 from optim import IntSGD
 from quant import QuantSpec, registry
 
-STEPS = 1000
+# The token budget is a FLAG, not an edited constant. The GPU runs used 10000
+# steps (20.48M tokens) and the CPU runs 1000 (2.05M), and the difference is not
+# cosmetic: the headline finding of this project is that the two regimes give
+# OPPOSITE answers about quantized latent weights. Editing a constant to switch
+# between them is how a result ends up filed under the wrong budget.
+STEPS = int(os.environ.get("ONEBIT_STEPS", 1000))
 SEEDS = (0, 1, 2)
 EVAL_EVERY = 100
 
@@ -54,6 +59,15 @@ ACT8 = QuantSpec(kind="int", bits=8, granularity="row", calib="absmax")
 ACT8_P2 = QuantSpec(kind="int", bits=8, granularity="row", calib="absmax",
                     scale_mode="pow2", pow2_mode="ceil")
 ACT4 = QuantSpec(kind="int", bits=4, granularity="row", calib="absmax")
+ACT4_P2 = QuantSpec(kind="int", bits=4, granularity="row", calib="absmax",
+                    scale_mode="pow2", pow2_mode="ceil")
+ATT8 = QuantSpec(kind="int", bits=8, granularity="row", calib="absmax")
+ATT8_P2 = QuantSpec(kind="int", bits=8, granularity="row", calib="absmax",
+                    scale_mode="pow2", pow2_mode="ceil")
+ATT4 = QuantSpec(kind="int", bits=4, granularity="row", calib="absmax")
+HEAD8 = QuantSpec(kind="int", bits=8, granularity="row", calib="absmax")
+HEAD8_P2 = QuantSpec(kind="int", bits=8, granularity="row", calib="absmax",
+                     scale_mode="pow2", pow2_mode="ceil")
 DY8 = QuantSpec(kind="int", bits=8, granularity="row", rounding="stochastic")
 WG8 = QuantSpec(kind="int", bits=8, granularity="tensor", rounding="stochastic")
 
@@ -71,6 +85,18 @@ def ladder() -> list[LadderConfig]:
         LadderConfig(name="R2p9_act4", w_spec=TERN, a_spec=ACT4),
         LadderConfig(name="R3a_dgrad8", w_spec=TERN, a_spec=ACT8, g_spec=DY8),
         LadderConfig(name="R3b_wgrad8", **full),
+        # --- 4-bit multiplier-free: M0 predicts pow2 scaling bites HERE, not at 8
+        LadderConfig(name="R2p95_act4_pow2", w_spec=TERN_P2, a_spec=ACT4_P2),
+        # --- R6: the two activation x activation matmuls inside attention
+        LadderConfig(name="R6_attn8", **full, attn_spec=ATT8),
+        LadderConfig(name="R6p5_attn8_pow2", **full, attn_spec=ATT8_P2,
+                     attn_scale_pow2=True),
+        LadderConfig(name="R6_attn4", **full, attn_spec=ATT4),
+        # --- R7: the LM head, 55% of the residue and never before in the ladder
+        LadderConfig(name="R7_head8", **full, attn_spec=ATT8, head_spec=HEAD8),
+        LadderConfig(name="R7_everything_pow2", w_spec=TERN_P2, a_spec=ACT8_P2,
+                     g_spec=DY8, wg_spec=WG8, attn_spec=ATT8_P2,
+                     attn_scale_pow2=True, head_spec=HEAD8_P2),
         # R5 head-to-head on top of the full forward+backward integer stack
         LadderConfig(name="R5_shadow8ef", **full, shadow_bits=8, shadow_mode="ef"),
         LadderConfig(name="R5_shadow8sr", **full, shadow_bits=8, shadow_mode="sr"),
@@ -187,13 +213,21 @@ def done_already(path: Path) -> set:
     if not path.exists():
         return set()
     with path.open(encoding="utf-8") as f:
-        return {(r["config"], int(r["seed"])) for r in csv.DictReader(f)}
+        # keyed on the BUDGET too: a 2.05M-token row must not be mistaken for a
+        # completed 20.48M-token run when resuming
+        return {(r["config"], int(r["seed"]), int(r["steps"]))
+                for r in csv.DictReader(f)}
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", default=None, help="comma-separated config names")
+    ap.add_argument("--steps", type=int, default=None,
+                    help="token budget in steps (default 1000 = 2.05M tokens)")
     args = ap.parse_args()
+    global STEPS
+    if args.steps:
+        STEPS = args.steps
 
     pin()
     awake = prevent_sleep()
@@ -215,7 +249,8 @@ def main() -> int:
         want = set(args.only.split(","))
         configs = [c for c in configs if c.name in want]
 
-    todo = [(c, s) for c in configs for s in SEEDS if (c.name, s) not in done]
+    todo = [(c, s) for c in configs for s in SEEDS
+            if (c.name, s, STEPS) not in done]
     print(f"[m5] {len(configs)} configs x {len(SEEDS)} seeds; "
           f"{len(done)} already done, {len(todo)} to run")
     print(f"[m5] budget {STEPS*BATCH*CTX:,} tokens/run, threads={threads()}\n")

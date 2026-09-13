@@ -31,7 +31,8 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from models.quant_mlp import LadderConfig, QuantLinear
+from models.quant_mlp import NONE, LadderConfig, QuantLinear
+from quant import fake_quant_ste, make_generator
 
 NONE_LADDER = LadderConfig()
 
@@ -64,7 +65,40 @@ class CausalSelfAttention(nn.Module):
                                 name=f"blk{layer}.attn_proj", seed=seed)
         mask = torch.tril(torch.ones(cfg.ctx, cfg.ctx)).view(1, 1, cfg.ctx, cfg.ctx)
         self.register_buffer("mask", mask, persistent=False)
-        self.scale = 1.0 / math.sqrt(cfg.head_dim)
+        self.layer = layer
+
+        # R6. attn_spec quantizes the four operands of the two
+        # activation x activation matmuls. Unlike every other rung there is no
+        # weight here to make ternary: both operands are dynamic, so both must
+        # be integer or neither matmul becomes integer.
+        self.attn_spec = cfg.ladder.attn_spec
+        self.attn_scale_pow2 = cfg.ladder.attn_scale_pow2
+
+        exact = 1.0 / math.sqrt(cfg.head_dim)
+        if self.attn_scale_pow2:
+            # head_dim=32 -> 1/sqrt(32) = 2^-2.5, NOT a power of two. Rounding
+            # it to 2^-2 or 2^-3 changes the softmax TEMPERATURE by 1.41x, so
+            # this rung is not cosmetic: it is a real change to attention.
+            self.scale = 2.0 ** round(math.log2(exact))
+        else:
+            self.scale = exact
+        self.scale_is_pow2 = self.attn_scale_pow2
+
+        self._base_seed = seed * 7919 + 104729 + layer
+        self._gens: dict[tuple[str, str, int], torch.Generator] = {}
+
+    def _gen(self, kind: str, device: torch.device) -> torch.Generator:
+        key = (kind, device.type, device.index if device.index is not None else -1)
+        g = self._gens.get(key)
+        if g is None:
+            g = make_generator(self._base_seed + "qkva".index(kind), device)
+            self._gens[key] = g
+        return g
+
+    def _q(self, t: Tensor, kind: str) -> Tensor:
+        return fake_quant_ste(t, spec=self.attn_spec,
+                              generator=self._gen(kind, t.device),
+                              site=f"blk{self.layer}.attn_{kind}")
 
     def forward(self, x: Tensor) -> Tensor:
         B, T, C = x.shape
@@ -75,11 +109,15 @@ class CausalSelfAttention(nn.Module):
         v = v.view(B, T, H, C // H).transpose(1, 2)
 
         # activation x activation matmul #1 -- an R6 target, both operands dynamic
-        att = (q @ k.transpose(-2, -1)) * self.scale
+        att = (self._q(q, "q") @ self._q(k, "k").transpose(-2, -1)) * self.scale
         att = att.masked_fill(self.mask[:, :, :T, :T] == 0, float("-inf"))
         att = F.softmax(att, dim=-1)
-        # activation x activation matmul #2 -- an R6 target
-        y = att @ v
+        # activation x activation matmul #2 -- an R6 target.
+        # NOTE the probabilities are non-negative, so a SYMMETRIC signed
+        # quantizer spends a whole bit on a sign that never occurs: 8-bit
+        # attention probabilities are really 7-bit. Recorded, not fixed --
+        # fixing it would confound this rung with a zero-point change.
+        y = self._q(att, "a") @ self._q(v, "v")
 
         y = y.transpose(1, 2).contiguous().view(B, T, C)
         return self.proj(y)
@@ -98,6 +136,46 @@ class MLP(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         return self.proj(self.act(self.fc(x)))
+
+
+class LMHead(nn.Module):
+    """The tied output projection, as its OWN leaf module.
+
+    It was an `nn.Linear` buried in QuantGPT.forward, which made it invisible to
+    both the ladder and the auditor's per-module attribution. The M4 audit then
+    found it owns ~55% of every multiply that survives the full stack -- the
+    single largest residue, purely because no rung had ever touched it.
+
+    Quantizing here affects only the MATMUL. The embedding lookup still gathers
+    the raw tied parameter, which is correct: a gather is not a multiply.
+    """
+
+    def __init__(self, cfg: GPTConfig, seed: int) -> None:
+        super().__init__()
+        self.weight = nn.Parameter(torch.empty(cfg.vocab_size, cfg.d_model))
+        nn.init.normal_(self.weight, mean=0.0, std=0.02)
+        self.head_spec = cfg.ladder.head_spec
+        # names the auditor reads (see audit/float_ops.py::_matmul_is_integer)
+        self.w_spec = self.head_spec
+        self.a_spec = self.head_spec
+        self.g_spec = NONE
+        self._seed = seed * 7919 + 15485863
+        self._gens: dict[tuple[str, str, int], torch.Generator] = {}
+
+    def _q(self, t: Tensor, kind: str) -> Tensor:
+        dev = t.device
+        key = (kind, dev.type, dev.index if dev.index is not None else -1)
+        g = self._gens.get(key)
+        if g is None:
+            g = make_generator(self._seed + "wa".index(kind), dev)
+            self._gens[key] = g
+        return fake_quant_ste(t, spec=self.head_spec, generator=g,
+                              site=f"head.{kind}")
+
+    def forward(self, x: Tensor) -> Tensor:
+        if self.head_spec.kind == "none":
+            return F.linear(x, self.weight)
+        return F.linear(self._q(x, "a"), self._q(self.weight, "w"))
 
 
 class Block(nn.Module):
@@ -123,7 +201,7 @@ class QuantGPT(nn.Module):
             [Block(cfg, i, seed) for i in range(cfg.n_layer)]
         )
         self.ln_f = nn.LayerNorm(cfg.d_model)
-        self.head = nn.Linear(cfg.d_model, cfg.vocab_size, bias=False)
+        self.head = LMHead(cfg, seed)
         if cfg.tie_weights:
             self.head.weight = self.tok_emb.weight
 

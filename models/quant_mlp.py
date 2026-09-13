@@ -44,6 +44,9 @@ class LadderConfig:
     shadow_mode: str = "sr"             # rtn | sr | ef
     shadow_range: float = 4.0
     quantize_first_last: bool = False   # BitNet-family papers usually do NOT
+    attn_spec: QuantSpec = NONE         # R6  q, k, v and the attention probs
+    attn_scale_pow2: bool = False       # R6  1/sqrt(head_dim) -> a shift
+    head_spec: QuantSpec = NONE         # R7  the tied LM head matmul
 
     def describe(self) -> str:
         parts = []
@@ -51,6 +54,11 @@ class LadderConfig:
                        ("dy", self.g_spec), ("wg", self.wg_spec)):
             if s.kind != "none":
                 parts.append(f"{tag}={s.describe()}")
+        if self.attn_spec.kind != "none":
+            parts.append(f"attn={self.attn_spec.describe()}"
+                         + ("+p2scale" if self.attn_scale_pow2 else ""))
+        if self.head_spec.kind != "none":
+            parts.append(f"head={self.head_spec.describe()}")
         if self.shadow_bits:
             parts.append(f"shadow={self.shadow_bits}b/{self.shadow_mode}")
         return self.name + (" [" + " ".join(parts) + "]" if parts else " [none]")
