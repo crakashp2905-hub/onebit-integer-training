@@ -13,3 +13,5 @@ results/*.err
 # functions of those two files and of a seed, so they are not kept.
 data/cache/*.pt
 data/cache/tinystories_valid.txt
+gpu/_payload/
+gpu/_kernel/
