@@ -38,7 +38,7 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
 
     print(f"[pull] {ref} -> {out}")
-    api.kernels_output(*ref.split("/", 1), path=str(out))
+    api.kernels_output(ref, path=str(out))
 
     csvs = sorted(out.glob("*.csv"))
     if not csvs:

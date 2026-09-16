@@ -48,13 +48,26 @@ def test_a_network_blip_is_never_a_completion(bogus):
         watch.status(api, "u/k")
 
 
-def test_only_the_three_real_terminal_states_are_terminal():
-    assert "complete" in watch.TERMINAL
-    assert "error" in watch.TERMINAL
-    assert "cancelacknowledged" in watch.TERMINAL
-    for running in ("running", "queued", "unknown", "", "pending", "kernelworkerstarted"):
-        key = running.lower().replace("_", "").replace("kernelworkerstatus.", "")
-        assert key not in watch.TERMINAL, f"{running!r} must not end the watch"
+@pytest.mark.parametrize("s", [
+    "complete", "COMPLETE", "KernelWorkerStatus.COMPLETE",
+    "error", "KernelWorkerStatus.ERROR",
+    "KernelWorkerStatus.CANCEL_ACKNOWLEDGED",
+])
+def test_real_terminal_states_are_recognised(s):
+    """The API returns the enum's repr, not a bare word. A watcher that fails to
+    recognise COMPLETE polls a finished job until it times out."""
+    assert watch.is_terminal(s)
+
+
+@pytest.mark.parametrize("s", [
+    "running", "queued", "unknown", "", "pending",
+    "KernelWorkerStatus.RUNNING", "KernelWorkerStatus.QUEUED",
+    "SomethingNobodyHasSeenBefore",
+])
+def test_nothing_else_is_terminal(s):
+    """Including the status string nobody has seen before -- an unrecognised
+    status is a reason to keep watching, never a reason to report completion."""
+    assert not watch.is_terminal(s)
 
 
 # ------------------------------------------------------------------- the payload

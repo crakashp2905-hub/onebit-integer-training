@@ -20,8 +20,28 @@ from datetime import datetime
 TERMINAL = {"complete", "error", "cancelacknowledged", "cancelled", "canceled"}
 
 
+def normalize(s: str) -> str:
+    """The API returns 'KernelWorkerStatus.RUNNING', not 'running'. Normalizing
+    inline in the poll loop left that untested, which is precisely how the
+    original false-COMPLETE bug got in: the classification of a status string is
+    the part that decides whether a result gets reported, so it is the part that
+    needs a test."""
+    return s.strip().lower().split(".")[-1].replace("_", "")
+
+
+def is_terminal(s: str) -> bool:
+    return normalize(s) in TERMINAL
+
+
 def status(api, ref: str) -> tuple[str, str]:
-    r = api.kernels_status(*ref.split("/", 1))
+    # kernels_status takes the full "user/slug" as ONE argument in the current
+    # client, and took two in an older one. Try both rather than pin a version:
+    # a signature mismatch here is indistinguishable, to the retry loop, from a
+    # network fault, so it would otherwise retry forever without ever saying why.
+    try:
+        r = api.kernels_status(ref)
+    except TypeError:
+        r = api.kernels_status(*ref.split("/", 1))
     s = getattr(r, "status", None) or (r.get("status") if isinstance(r, dict) else None)
     msg = getattr(r, "failureMessage", None) or (
         r.get("failureMessage") if isinstance(r, dict) else None)
@@ -65,13 +85,12 @@ def main() -> int:
             print(f"  {datetime.now():%H:%M:%S}  {s}"
                   + (f"  -- {msg}" if msg else ""), flush=True)
             last = s
-        key = s.lower().replace("_", "").replace("kernelworkerstatus.", "")
-        if key in TERMINAL:
+        if is_terminal(s):
             el = (time.time() - t0) / 3600
             print(f"\n[watch] terminal: {s} after {el:.2f} h")
             if msg:
                 print(f"[watch] {msg}")
-            return 0 if key == "complete" else 1
+            return 0 if normalize(s) == "complete" else 1
         time.sleep(args.interval)
 
 
