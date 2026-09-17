@@ -19,38 +19,84 @@ given with each section.
 
 ## The headline
 
-At a realistic token budget, **quantizing the latent weight is expensive, and
-the small-budget result that said otherwise was an artifact of undertraining.**
+**The ladder's cost is concentrated in one rung, and it is not the rung the
+literature spends its effort on.** Everything after ternary weights — INT8
+activations, both gradients, attention, the LM head — is free. It takes the
+arithmetic from 73.8% of FP32 down to 14.8% and costs nothing measurable.
 
-| config | ppl @20.5M tok | vs fp32 @20.5M | vs fp32 @2.05M (CPU) |
+All runs at 20.48M tokens, 3 seeds unless noted, normalized against the R0
+baseline measured on the same device.
+
+| config | ppl | vs fp32 | fp_mul remaining | device |
+|---|---:|---:|---:|---|
+| R0_fp32 | 7.638 / 7.646 | — | 100.0% | GPU / CPU |
+| **R1_ternary** | 9.841 | **+28.9%** | 73.8% | GPU |
+| R2_act8 | 9.846 | +28.9% | 73.9% | GPU |
+| R2p5_pow2scales *(n=1)* | 9.259 | +21.2% | 73.8% | GPU |
+| R2p9_act4 | 11.217 | +46.9% | 73.9% | GPU |
+| R2p95_act4_pow2 | 12.093 | +58.2% | 73.8% | CPU |
+| R3b_wgrad8 | 9.839 | +28.7% | 21.4% | CPU |
+| R6_attn8 *(n=2)* | 9.675 | +26.5% | 18.6% | CPU |
+| **R7_head8** | 9.735 | **+27.5%** | **14.8%** | GPU |
+| R5_shadow8ef | 10.143 | +32.8% | 21.4% | GPU |
+| R5_shadow8sr *(n=1)* | 10.210 | +33.7% | — | GPU |
+
+Model: 3.09M-param decoder, d=192 L=6 H=6 ctx=128 vocab=2048, 86.5% of
+parameters in the transformer body. `results/m5_all_20M.csv` is this table;
+`results/combine.py` rebuilds it.
+
+> **On mixing devices.** CPU and GPU rows appear in one table because the two
+> were checked against each other rather than assumed equivalent: R0_fp32
+> measured **7.646** on CPU and **7.638** on GPU — 0.1% apart, against a seed
+> spread of 7.598–7.687. Every rung is still normalized against the R0 measured
+> on its own device, so a device offset could not masquerade as a rung effect.
+
+Four things follow, and they are the substance of the project.
+
+### 1. The back half of the ladder is free
+
+From R1 to R7 the perplexity penalty does not move — +28.9%, +28.9%, +28.7%,
++26.5%, +27.5%, drifting *downward* inside the seed spread — while the audited
+arithmetic falls from **73.8% to 14.8%** of FP32. INT8 activations, quantized
+input gradients, quantized weight gradients, quantized attention and a quantized
+LM head are, between them, free.
+
+Two consequences:
+
+- **All of the loss cost is the ternary weight.** +28.9% buys 26% of the
+  multiplies; everything else buys the remaining 59 points for nothing.
+- **The cost/benefit ordering of the ladder is inverted**, and no loss-only view
+  of it can show this. That is what M4 was for, and the audit is the only reason
+  this is visible rather than a hunch.
+
+The structural reason is not a quirk of this model. R1 quantizes the *weight*,
+so it can claim one forward matmul. R3 quantizes the *gradient*, which is an
+operand of **both** backward matmuls — and the backward pass is two thirds of a
+training step's arithmetic.
+
+### 2. Power-of-two scaling is free at 8 bits and costs ~8% at 4
+
+The open question from the last write-up. Now measured on both sides:
+
+| bits | float scales | pow2 scales | pow2 penalty |
 |---|---:|---:|---:|
-| R0_fp32 | 7.638 | — | — |
-| R1_ternary | 9.841 | **+28.8%** | +8.6% |
-| R2_act8 | 9.846 | +28.9% | +7.3% |
-| R2p5_pow2scales | 9.259 | **+21.2%** | +6.7% |
-| R5_shadow8ef | 10.143 | **+32.8%** | **+0.0%** |
-| R5_shadow8sr | 10.210 | +33.7% | +0.3% |
+| 8 | 9.846 (+28.9%) | 9.259 (+21.2%, n=1) | none — pow2 was *better* |
+| 4 | 11.217 (+46.9%) | 12.093 (+58.2%) | **+7.7%** |
 
-3 seeds except R2p5 and R5_shadow8sr (n=1). Model: 3.09M-param decoder,
-d=192 L=6 H=6 ctx=128 vocab=2048, 86.5% of parameters in the transformer body.
+So the constraint does eventually bite, and 4 bits is where it starts. But the
+original prediction — that *scale representation* would bind before *bit-width*
+— is still wrong, and now quantitatively so: dropping 8→4 bits costs **+18
+points** of penalty, while forcing the scales to shifts costs **+7.7%** on top
+of that. Bit-width is the dominant axis by more than a factor of two.
 
-Three things follow, and they are the substance of the project.
+M0 predicted +25% at 8 bits growing to +68% at 3. The 8-bit half of that was
+wrong. The direction of growth was right.
 
-### 1. The undertrained regime masks quantization damage
-
-The FP32 baseline improves enormously with 10× tokens (ppl 22.29 → 7.638) while
-ternary improves far less (24.22 → 9.841). The *relative* cost of ternary
-weights therefore **triples**, +8.6% → +28.8%.
-
-Every margin measured at the small budget is understated. This is not a minor
-caveat; it is the dominant effect in the whole dataset.
-
-### 2. A 3-seed, lr-swept, non-overlapping result was still an artifact
+### 3. Latent weights are the one rung that is pure loss
 
 At 2.05M tokens, 8-bit latent weights matched FP32 exactly (+0.0%), and the solo
 variant appeared to **beat** it by 3.7%. That did not look like noise, and it
-was not: a full learning-rate sweep showed the untuned lr=0.5 explained only
-part of it. At each arm's own optimum, over 3 seeds:
+was not: at each arm's own optimum lr, over 3 seeds —
 
 | arm | best lr | ppl | spread |
 |---|---:|---:|---|
@@ -67,20 +113,20 @@ Given a realistic budget the regularizer becomes pure damage.
 
 The methodological lesson is sharper than the result: **effect size, seed
 spread, and hyperparameter sweeps do not protect against a systematically wrong
-regime.** Everything that could be checked *within* the small budget was
-checked, and the conclusion still inverted.
+regime.** Everything checkable *within* the small budget was checked, and the
+conclusion still inverted.
 
-### 3. Multiplier-free scaling is close to free; bit-width is what costs
+R5 is also now the *only* rung that costs anything on top of R1 — +32.8%
+against R3b's +28.7%, for no reduction in arithmetic at all (21.4% either way).
+It is the one rung that is pure loss.
 
-R2p5 constrains **every** scale to a power of two, so requantization is a shift
-rather than a float multiply. At 20.5M tokens it costs +21.2% against R2's
-+28.9% — i.e. no worse, and possibly better (n=1, so read the ordering, not the
-margin).
+### 4. The floor is not arithmetic, it is the transcendentals
 
-This is the fourth independent line of evidence against the kickoff prediction
-that scale representation would bind before bit-width, after M0 static error,
-M0 granularity, and the CPU ladder. Scope: 8 bits. M0 measured the pow2 penalty
-growing to +68% at 3 bits, and no 4-bit pow2 rung has been run.
+**6,815,744 per step = 13,312 per token**, identical across every rung —
+softmax `exp`/divide, LayerNorm `rsqrt`, GELU `erf`. No scaling scheme touches
+them. The honest answer to "can this transformer be made multiplier-free" is:
+the matmuls, yes, to 14.8% and probably further; the transcendentals, not
+without changing the architecture.
 
 ---
 
@@ -209,10 +255,22 @@ fp32 — inside noise. An experiment that cannot break cannot inform.
 ## M3/M5 — the transformer
 
 ```
-python experiments/m3_baseline.py   ->  results/m3_baseline.csv
-python experiments/m5_ladder.py     ->  results/m5_ladder.csv
-kaggle/                             ->  the GPU runs
+python experiments/m3_baseline.py         ->  results/m3_baseline.csv
+python experiments/m5_ladder.py --steps 10000
+python results/combine.py                 ->  results/m5_all_20M.csv
+python results/plot_m5.py --results results/gpu3
+gpu/                                      ->  the Kaggle GPU runs
 ```
+
+**Provenance of the 20.48M table.** 31 runs across three sources: `results/`
+(local CPU), `results/gpu2/` and `results/gpu3/` (Kaggle P100). The gpu3 session
+was **cancelled by Kaggle after 6 of its 9 runs** — `CANCEL_ACKNOWLEDGED`, not
+`COMPLETE`. Because `m5_ladder.py` appends after every run rather than at the
+end, the 6 completed runs survived intact and only `R7_everything_pow2` was
+lost. The watcher reported the cancellation as a non-completion rather than a
+success, which is the whole reason it exists: it had also just spent three
+hours retrying a DNS outage without once mistaking the silence for a finished
+job.
 
 FP32 reference at 2.05M tokens: AdamW ppl 20.23, IntSGD+momentum ppl 22.29,
 random ln(2048) = 7.62 nats. Two arms deliberately — every quantized rung is
@@ -269,9 +327,9 @@ One training step, batch 4 × ctx 128:
 | R2p5_pow2scales | 3,793,170,456 | 73.8% | +21.2% |
 | R3b_wgrad8 | 1,097,981,976 | **21.4%** | **~0%** |
 | R5_shadow8ef | 1,097,981,976 | 21.4% | +32.8% |
-| R6_attn8 | 958,267,416 | 18.6% | *running* |
-| R7_head8 | 758,975,000 | 14.8% | *running* |
-| R7_everything_pow2 | 749,668,888 | **14.6%** | *running* |
+| R6_attn8 | 958,267,416 | 18.6% | +26.5% *(n=2)* |
+| R7_head8 | 758,975,000 | **14.8%** | **+27.5%** |
+| R7_everything_pow2 | 749,668,888 | 14.6% | *not run — kernel cancelled* |
 
 ### The ladder is upside down
 
@@ -302,7 +360,8 @@ Of the 1,097,981,976 multiplies that survived the full stack:
 the LM head's share was an accident of code structure: it was an `nn.Linear`
 buried in `QuantGPT.forward` rather than a `QuantLinear`. It has since been
 promoted to its own leaf module (R7) and attention quantization added (R6),
-taking the audited residue to 14.6%.
+taking the audited residue to 14.8% — **at no cost in perplexity**, which is
+the result the audit was built to make visible.
 
 ### The irreducible part
 
@@ -338,9 +397,10 @@ rung's benefit but never overstate it.
 | Error feedback beats stochastic rounding | **flipped three times**; dissolves at scale |
 | Momentum may rescue RTN latent weights | **half right** — degraded but learning |
 | Parallelism would speed the sweep | **wrong** — memory-bandwidth-bound, 0.97× |
-| (unstated, and wrong) that the ladder's rungs cost roughly in proportion to what they buy | **wrong** — ternary buys 26% for +28.8%, gradients buy 53% for free |
+| (unstated, and wrong) that the ladder's rungs cost roughly in proportion to what they buy | **wrong** — ternary buys 26% for +28.9%; everything else buys 59 more points for free |
+| Scale representation binds before bit-width — retested at 4 bits | **still wrong**, now quantitatively: 8→4 bits costs +18 points, pow2 costs +7.7% on top |
 
-Three held, five wrong, one half. The failures cluster: every one was a case of
+Three held, six wrong, one half. The failures cluster: every one was a case of
 generalizing from an instrument that could not support the generalization —
 a single spectrum, a single token budget, a single problem class.
 
@@ -348,12 +408,16 @@ a single spectrum, a single token budget, a single problem class.
 
 ## Open
 
-- **4-bit power-of-two scaling, R6 (attention), R7 (LM head).** Built and
-  audited; loss numbers at 20.5M tokens are **running now** and are the one gap
-  between the audit's cost column and its benefit column.
+- **R7_everything_pow2.** The one config with no loss number: the Kaggle kernel
+  was cancelled (`CANCEL_ACKNOWLEDGED`) after delivering 6 of its 9 runs. It is
+  the all-pow2, all-rungs config at 14.6% — the cheapest point in the audit.
+- **R6_attn8 third seed**, still running locally (n=2 as reported).
 - **Attention backward.** R6 quantizes the forward QK^T and AV only, so the
   audit scores dQ/dK/dV as full FP. Roughly two thirds of attention's arithmetic
-  is therefore still unclaimed.
+  is therefore still unclaimed, and the 14.8% figure is correspondingly
+  conservative.
+- **Below 4 bits.** 4 bits costs +46.9% and pow2 adds +7.7% on top. M0 predicts
+  both curves steepen at 3; untested.
 - **The transcendentals.** 13,312 per token, untouched by every rung. Reaching
   them means replacing softmax and LayerNorm, not rescaling them.
 - **R4 (quantized optimizer state).** IntSGD carries FP32 momentum; only the
