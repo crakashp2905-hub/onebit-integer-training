@@ -47,6 +47,10 @@ ACT8 = QuantSpec(kind="int", bits=8, granularity="row", calib="absmax")
 ACT8_P2 = QuantSpec(kind="int", bits=8, granularity="row", calib="absmax",
                     scale_mode="pow2", pow2_mode="ceil")
 ACT4 = QuantSpec(kind="int", bits=4, granularity="row", calib="absmax")
+TERN_X15 = QuantSpec(kind="ternary", granularity="tensor", calib="absmean",
+                     scale_mult=1.5)
+TERN_P2R = QuantSpec(kind="ternary", granularity="tensor", calib="absmean",
+                     scale_mode="pow2", pow2_mode="round")
 ACT4_P2 = QuantSpec(kind="int", bits=4, granularity="row", calib="absmax",
                     scale_mode="pow2", pow2_mode="ceil")
 ATT8 = QuantSpec(kind="int", bits=8, granularity="row", calib="absmax")
@@ -68,6 +72,12 @@ def configs() -> list[LadderConfig]:
         LadderConfig(name="R2_act8", w_spec=TERN, a_spec=ACT8),
         LadderConfig(name="R2p5_pow2scales", w_spec=TERN_P2, a_spec=ACT8_P2),
         LadderConfig(name="R2p9_act4", w_spec=TERN, a_spec=ACT4),
+        # --- pow2 CONFOUND CONTROLS. pow2_mode=ceil inflated the ternary scale
+        # x1.3-1.95 and so also sparsified the weights; these separate the two.
+        # Compare each against R2_act8 (float everything) and R2p5.
+        LadderConfig(name="C1_actpow2_only", w_spec=TERN, a_spec=ACT8_P2),
+        LadderConfig(name="C2_tern_x1p5", w_spec=TERN_X15, a_spec=ACT8),
+        LadderConfig(name="C3_pow2_round", w_spec=TERN_P2R, a_spec=ACT8_P2),
         LadderConfig(name="R3b_wgrad8", **full),
         # --- 4-bit multiplier-free: M0 predicts pow2 scaling bites HERE, not at 8
         LadderConfig(name="R2p95_act4_pow2", w_spec=TERN_P2, a_spec=ACT4_P2),

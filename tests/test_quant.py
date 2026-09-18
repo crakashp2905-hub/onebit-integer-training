@@ -377,3 +377,23 @@ def test_pow2_ceil_changes_ternary_sparsity_not_just_the_scale():
     zp = (p.codes == 0).float().mean().item()
     assert p.scale.item() > f.scale.item()
     assert zp > zf + 0.10, f"ceil-pow2 should materially sparsify ternary: {zf:.3f} vs {zp:.3f}"
+
+
+def test_scale_mult_scales_the_scale_and_rejects_nonpositive():
+    x = torch.randn(64, 32)
+    a = quantize(x, spec=QuantSpec(kind="ternary", calib="absmean"))
+    b = quantize(x, spec=QuantSpec(kind="ternary", calib="absmean", scale_mult=1.5))
+    assert torch.allclose(b.scale, a.scale * 1.5)
+    with pytest.raises(ValueError):
+        QuantSpec(kind="ternary", scale_mult=0.0)
+
+
+def test_pow2_round_control_leaves_ternary_sparsity_roughly_unchanged():
+    """C3 is only a clean representation-only control if round-to-nearest pow2
+    does NOT reproduce ceil's sparsification. Measured 30.3% vs float 31.0%."""
+    torch.manual_seed(0)
+    W = torch.randn(576, 192) * 0.02
+    zf = (quantize(W, spec=QuantSpec(kind="ternary", calib="absmean")).codes == 0).float().mean()
+    zr = (quantize(W, spec=QuantSpec(kind="ternary", calib="absmean", scale_mode="pow2",
+                                     pow2_mode="round")).codes == 0).float().mean()
+    assert abs(zr - zf) < 0.05

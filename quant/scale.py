@@ -140,7 +140,7 @@ def compute_scale(x: Tensor, spec: QuantSpec) -> tuple[Tensor, Tensor, int]:
     """
     view, reduce_dim = group_view(x, spec)
     amax = calibrate(view, reduce_dim, spec)
-    scale = amax / spec.qmax
+    scale = amax / spec.qmax * spec.scale_mult
     scale = scale.clamp_min(torch.finfo(scale.dtype).tiny)
     scale = apply_scale_mode(scale, spec)
     return view, scale, reduce_dim

@@ -81,6 +81,11 @@ class QuantSpec:
     percentile: float = 99.9
     ste: STEMode = "identity"
     ste_clip: float = 1.0
+    # Multiplies the calibrated scale BEFORE scale_mode is applied. Exists for
+    # one control: pow2_mode="ceil" inflates a ternary scale x1.3-1.95, which
+    # also makes the ternary weights sparser. scale_mult=1.5 with a FLOAT scale
+    # reproduces the sparsity change without the representation change.
+    scale_mult: float = 1.0
 
     def __post_init__(self) -> None:
         if self.kind == "int":
@@ -97,6 +102,8 @@ class QuantSpec:
             raise ValueError("block_size is only meaningful for granularity='block'")
         if self.scale_mode == "dyadic" and self.mantissa_bits < 0:
             raise ValueError("mantissa_bits must be >= 0")
+        if self.scale_mult <= 0:
+            raise ValueError("scale_mult must be > 0")
         if not (0.0 < self.percentile <= 100.0):
             raise ValueError("percentile must be in (0, 100]")
 
@@ -124,4 +131,5 @@ class QuantSpec:
             smode += f"/{self.pow2_mode}"
         elif self.scale_mode == "dyadic":
             smode += f"/m{self.mantissa_bits}"
-        return f"{base}|{gran}|{smode}|{self.rounding}|{self.calib}|ste={self.ste}"
+        mult = f"|x{self.scale_mult:g}" if self.scale_mult != 1.0 else ""
+        return f"{base}|{gran}|{smode}{mult}|{self.rounding}|{self.calib}|ste={self.ste}"
