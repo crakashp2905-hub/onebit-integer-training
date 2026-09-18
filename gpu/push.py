@@ -96,14 +96,23 @@ def stage(files: list[Path], out: Path) -> None:
     print(f"[stage] {out}  {total/1e6:.1f} MB")
 
 
+def cli_failed(returncode: int, stdout: str) -> bool:
+    """The Kaggle CLI reports some rejections as TEXT with exit code 0 -- e.g.
+    'Kernel push error: Maximum weekly GPU quota of 30.00 hours reached.' Trusting
+    the exit code alone printed 'pushed.' for a push that never happened, and the
+    watcher then reported the previous session's COMPLETE as this one's."""
+    return returncode != 0 or "error" in stdout.lower()
+
+
 def kaggle(*args: str) -> None:
     print("+ kaggle " + " ".join(args))
     r = subprocess.run([sys.executable, "-m", "kaggle", *args],
                        cwd=ROOT, text=True, capture_output=True)
     print(r.stdout.strip())
-    if r.returncode != 0:
+    if cli_failed(r.returncode, r.stdout):
         print(r.stderr.strip(), file=sys.stderr)
-        sys.exit(r.returncode)
+        print("[push] FAILED -- nothing is running on Kaggle.", file=sys.stderr)
+        sys.exit(r.returncode or 2)
 
 
 def main() -> int:

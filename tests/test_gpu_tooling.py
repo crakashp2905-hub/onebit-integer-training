@@ -91,3 +91,21 @@ def test_the_kernel_payload_can_never_be_pushed_public():
     src = (ROOT / "gpu" / "push.py").read_text(encoding="utf-8")
     assert '"is_private": True' in src
     assert "refusing to push a public kernel" in src
+
+
+def test_a_stale_terminal_status_is_not_accepted_before_the_job_was_seen_active():
+    """Regression: right after a push, the API returned the PREVIOUS version's
+    COMPLETE and the watcher reported the new job done after 0.00 h."""
+    assert not watch.accept_terminal("KernelWorkerStatus.COMPLETE", seen_active=False)
+    assert watch.accept_terminal("KernelWorkerStatus.COMPLETE", seen_active=True)
+    assert not watch.accept_terminal("KernelWorkerStatus.RUNNING", seen_active=True)
+
+
+@pytest.mark.parametrize("rc,out,failed", [
+    (0, "Kernel version 7 successfully pushed.", False),
+    (0, "Kernel push error: Maximum weekly GPU quota of 30.00 hours reached.", True),
+    (1, "", True),
+])
+def test_push_detects_a_rejection_reported_as_text_with_exit_code_0(rc, out, failed):
+    from gpu import push
+    assert push.cli_failed(rc, out) is failed

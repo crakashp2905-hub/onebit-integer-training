@@ -33,6 +33,15 @@ def is_terminal(s: str) -> bool:
     return normalize(s) in TERMINAL
 
 
+def accept_terminal(s: str, seen_active: bool) -> bool:
+    """A terminal status counts only after this watcher has seen the job ACTIVE.
+
+    Right after a push, the API still reports the PREVIOUS version's final
+    state. Without this guard the watcher read a stale COMPLETE and declared a
+    job done after 0.00 h -- a false completion by a new route."""
+    return is_terminal(s) and seen_active
+
+
 def status(api, ref: str) -> tuple[str, str]:
     # kernels_status takes the full "user/slug" as ONE argument in the current
     # client, and took two in an older one. Try both rather than pin a version:
@@ -52,6 +61,9 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--kernel", default=None, help="user/kernel-slug")
     ap.add_argument("--interval", type=int, default=120)
+    ap.add_argument("--stale-grace-min", type=float, default=30.0,
+                    help="how long a terminal status may persist before the "
+                         "job is ever seen active; after this, report STALE")
     ap.add_argument("--max-hours", type=float, default=13.0,
                     help="Kaggle caps a session at 12h; this is the giving-up point")
     args = ap.parse_args()
@@ -65,6 +77,7 @@ def main() -> int:
     t0 = time.time()
     consecutive_errors = 0
     last = None
+    seen_active = False
     while True:
         if (time.time() - t0) / 3600 > args.max_hours:
             print(f"[watch] gave up after {args.max_hours}h -- status never became "
@@ -85,7 +98,18 @@ def main() -> int:
             print(f"  {datetime.now():%H:%M:%S}  {s}"
                   + (f"  -- {msg}" if msg else ""), flush=True)
             last = s
-        if is_terminal(s):
+        if not is_terminal(s):
+            seen_active = True
+        elif not accept_terminal(s, seen_active):
+            if (time.time() - t0) / 60 > args.stale_grace_min:
+                print()
+                print(f"[watch] STALE: status has been {s} since the watch began "
+                      f"and the job was never seen running. The push probably "
+                      f"did not take. THIS IS NOT A COMPLETION.")
+                return 4
+            time.sleep(args.interval)
+            continue
+        if accept_terminal(s, seen_active):
             el = (time.time() - t0) / 3600
             print(f"\n[watch] terminal: {s} after {el:.2f} h")
             if msg:
