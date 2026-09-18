@@ -110,10 +110,29 @@ consistent with sparser ternary weights helping. At 4 bits, pow2 looked *worse*
 **Still valid:** bit-width is expensive. R2p9_act4 at +46.9% vs R2_act8 at +28.9%
 is float-vs-float, with no pow2 involved.
 
-**Controls needed** (not yet run):
-- pow2 on activations only, float ternary β: isolates the representation effect
-- float ternary β × fixed 1.5: isolates the sparsity effect
-- pow2 with `round` instead of `ceil` for the weight scale
+**Controls — session 1 run (3 seeds each, 20.48M tokens, GPU):**
+
+| control | what changes vs R2_act8 | ppl | spread | vs R2_act8 |
+|---|---|---:|---|---:|
+| R2_act8 | — (float everything) | 9.846 | 9.824–9.878 | — |
+| C1_actpow2_only | pow2 **activation** scales only | 9.783 | 9.757–9.808 | −0.6% |
+| C2_tern_x1p5 | float ternary β **×1.5** (sparsity, no pow2) | **9.235** | 9.193–9.293 | **−6.2%** |
+| R2p5_pow2scales *(n=1)* | pow2-ceil on both (confounded) | 9.259 | — | −6.0% |
+| C3_pow2_round | pow2-**round** on both (30% zeros, as float) | *running* | | |
+
+**Sparsity explains the whole R2p5 effect.** C2 reproduces R2p5's 9.26 with
+float scales and no power of two anywhere. And pow2 on activations alone (C1) is
+within 0.6% of float. Its range sits just below R2_act8's, but a gap that small
+is not something I'd claim as an improvement.
+
+So, pending C3:
+- **The multiplier-free constraint on activation scales is free at 8 bits.**
+  This is now a clean result, not a confounded one.
+- **The absmean ternary scale is not optimal at this scale.** Scaling β up 1.5×
+  (31% → 45% zeros) cuts the ternary penalty from +28.9% to about +21%. Only one
+  multiplier has been tried, so this shows that the default can be beaten, not
+  where the optimum is.
+- The 4-bit pow2 comparison (R2p95) is still confounded and stays withdrawn.
 
 ### 3. Latent weights are the one rung that is pure loss
 
@@ -421,7 +440,7 @@ rung's benefit but never overstate it.
 | Momentum may rescue RTN latent weights | **half right** — degraded but learning |
 | Parallelism would speed the sweep | **wrong** — memory-bandwidth-bound, 0.97× |
 | (unstated, and wrong) that the ladder's rungs cost roughly in proportion to what they buy | **wrong** — ternary buys 26% for +28.9%; everything else buys 59 more points for free |
-| Scale representation binds before bit-width — retested at 4 bits | **untested** — every pow2 run is confounded by ternary sparsity (ceil inflates β ×1.3–1.95); see §2 |
+| Scale representation binds before bit-width | **wrong at 8 bits, now cleanly**: pow2 activations −0.6% (C1). The apparent pow2 *gain* was ternary sparsity (C2). 4 bits still confounded |
 
 Three held, five wrong, one half, one withdrawn as confounded. The failures cluster: every one was a case of
 generalizing from an instrument that could not support the generalization —
@@ -431,7 +450,7 @@ a single spectrum, a single token budget, a single problem class.
 
 ## Open
 
-- **The pow2 controls in §2.** Every pow2 result is confounded until they run.
+- **C3 (pow2-round), running.** It confirms C1 from the other direction. Also untested: the optimal ternary β multiplier, since only ×1.5 has been run.
 - **R6p5_attn8_pow2, R6_attn4.** Running locally again, restarted after a
   Windows restart (System event 1074, 03:15 on 2026-09-18) killed the job at
   run 13/24. R6p5 attention-pow2 is *not* confounded (float ternary β).

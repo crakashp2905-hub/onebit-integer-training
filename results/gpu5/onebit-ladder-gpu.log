@@ -1,0 +1,72 @@
+[{"stream_name":"stdout","time":1.017286609,"data":"======================================================================\n"}
+,{"stream_name":"stdout","time":1.017321591,"data":"mounted inputs:\n"}
+,{"stream_name":"stdout","time":1.055222945,"data":"  /kaggle/input/datasets\n"}
+,{"stream_name":"stdout","time":1.055247094,"data":"  /kaggle/input/datasets/crakashpreetham\n"}
+,{"stream_name":"stdout","time":1.055251933,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code\n"}
+,{"stream_name":"stdout","time":1.055255735,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/audit\n"}
+,{"stream_name":"stdout","time":1.055259421,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/audit/__init__.py\n"}
+,{"stream_name":"stdout","time":1.055263221,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/audit/float_ops.py\n"}
+,{"stream_name":"stdout","time":1.05526705,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data\n"}
+,{"stream_name":"stdout","time":1.055270774,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data/__init__.py\n"}
+,{"stream_name":"stdout","time":1.055274587,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data/cache\n"}
+,{"stream_name":"stdout","time":1.055278661,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data/cache/bpe_2048.json\n"}
+,{"stream_name":"stdout","time":1.055282942,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data/cache/tokens_2048.npz\n"}
+,{"stream_name":"stdout","time":1.055287111,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data/mnist.py\n"}
+,{"stream_name":"stdout","time":1.055291593,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data/tinystories.py\n"}
+,{"stream_name":"stdout","time":1.055298057,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments\n"}
+,{"stream_name":"stdout","time":1.055302097,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/convex_problem.py\n"}
+,{"stream_name":"stdout","time":1.055306299,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m0_characterize.py\n"}
+,{"stream_name":"stdout","time":1.055310132,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m1_convex.py\n"}
+,{"stream_name":"stdout","time":1.055313861,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m1_sensitivity.py\n"}
+,{"stream_name":"stdout","time":1.055317646,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m1_spectrum.py\n"}
+,{"stream_name":"stdout","time":1.055321068,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m2_mnist.py\n"}
+,{"stream_name":"stdout","time":1.055324508,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m3_baseline.py\n"}
+,{"stream_name":"stdout","time":1.055328289,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m4_audit.py\n"}
+,{"stream_name":"stdout","time":1.055332053,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m5_ladder.py\n"}
+,{"stream_name":"stdout","time":1.055336107,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m5_lr_control.py\n"}
+,{"stream_name":"stdout","time":1.055339963,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m5_lr_seed3.py\n"}
+,{"stream_name":"stdout","time":1.055343597,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/repro.py\n"}
+,{"stream_name":"stdout","time":1.055348123,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/gpu\n"}
+,{"stream_name":"stdout","time":1.055362174,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/gpu/entry.py\n"}
+,{"stream_name":"stdout","time":1.055366233,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/models\n"}
+,{"stream_name":"stdout","time":1.055370445,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/models/__init__.py\n"}
+,{"stream_name":"stdout","time":1.0553746450000001,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/models/quant_gpt.py\n"}
+,{"stream_name":"stdout","time":1.055378785,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/models/quant_mlp.py\n"}
+,{"stream_name":"stdout","time":1.055383055,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/optim\n"}
+,{"stream_name":"stdout","time":1.055387135,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/optim/__init__.py\n"}
+,{"stream_name":"stdout","time":1.055391175,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/optim/int_sgd.py\n"}
+,{"stream_name":"stdout","time":1.055395031,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant\n"}
+,{"stream_name":"stdout","time":1.055398611,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/__init__.py\n"}
+,{"stream_name":"stdout","time":1.055402385,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/config.py\n"}
+,{"stream_name":"stdout","time":1.055405955,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/error_feedback.py\n"}
+,{"stream_name":"stdout","time":1.055409707,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/quantizers.py\n"}
+,{"stream_name":"stdout","time":1.055413507,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/registry.py\n"}
+,{"stream_name":"stdout","time":1.05541714,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/round.py\n"}
+,{"stream_name":"stdout","time":1.05542101,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/scale.py\n"}
+,{"stream_name":"stdout","time":1.055425039,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/ste.py\n"}
+,{"stream_name":"stdout","time":1.055429385,"data":"======================================================================\n"}
+,{"stream_name":"stdout","time":1.057443955,"data":"[repo] found at /kaggle/input/datasets/crakashpreetham/onebit-ladder-code\n"}
+,{"stream_name":"stdout","time":1.22052242,"data":"[cache] seeded 2 frozen-corpus files\n"}
+,{"stream_name":"stdout","time":8.015042691,"data":"[torch] 2.10.0+cu128 cuda=True Tesla T4\n"}
+,{"stream_name":"stdout","time":8.015118212,"data":"+ /usr/bin/python3 /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m5_ladder.py --steps 10000 --only C1_actpow2_only,C2_tern_x1p5\n"}
+,{"stream_name":"stdout","time":5083.884632566,"data":"[sleep guard] keep-awake request NOT AVAILABLE -- scoped to this process, power plan untouched\n"}
+,{"stream_name":"stdout","time":5083.884707088,"data":"[m5] 2 configs x 3 seeds; 0 already done, 6 to run\n"}
+,{"stream_name":"stdout","time":5083.884713691,"data":"[m5] budget 20,480,000 tokens/run, threads=4\n"}
+,{"stream_name":"stdout","time":5083.884718632,"data":"\n"}
+,{"stream_name":"stdout","time":5083.884723146,"data":"  [1/6] C1_actpow2_only      seed0 ppl     9.78 froz 0.000 334.3 cpu-min (84 wall) ETA 7.0 h*\n"}
+,{"stream_name":"stdout","time":10109.824222429,"data":"  [2/6] C1_actpow2_only      seed1 ppl     9.81 froz 0.000 331.5 cpu-min (84 wall) ETA 5.6 h*\n"}
+,{"stream_name":"stdout","time":15094.179266396,"data":"  [3/6] C1_actpow2_only      seed2 ppl     9.76 froz 0.000 328.7 cpu-min (83 wall) ETA 4.2 h*\n"}
+,{"stream_name":"stdout","time":20089.805646839,"data":"  [4/6] C2_tern_x1p5         seed0 ppl     9.22 froz 0.000 329.5 cpu-min (83 wall) ETA 2.8 h*\n"}
+,{"stream_name":"stdout","time":24942.029232416,"data":"  [5/6] C2_tern_x1p5         seed1 ppl     9.19 froz 0.000 320.1 cpu-min (81 wall) ETA 1.4 h*\n"}
+,{"stream_name":"stdout","time":30014.428695642,"data":"  [6/6] C2_tern_x1p5         seed2 ppl     9.29 froz 0.000 334.6 cpu-min (84 wall) ETA 0.0 h*\n"}
+,{"stream_name":"stdout","time":30014.429184917,"data":"\n"}
+,{"stream_name":"stdout","time":30014.429193631,"data":"done in 8.33 h -\u003e /kaggle/working/m5_ladder.csv\n"}
+,{"stream_name":"stdout","time":30016.889626189,"data":"[out] m5_ladder.csv  1.9 kB\n"}
+,{"stream_name":"stdout","time":30016.889661204,"data":"[out] m5_ladder_curves.csv  41.1 kB\n"}
+,{"stream_name":"stderr","time":30019.767917268,"data":"/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":30019.767960544,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":30020.093388907,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":30020.093428246,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":30020.829603804,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":30022.24009151,"data":"[NbConvertApp] Writing 285551 bytes to __results__.html\n"}
+]
