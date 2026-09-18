@@ -1,0 +1,69 @@
+[{"stream_name":"stdout","time":0.698070899,"data":"======================================================================\n"}
+,{"stream_name":"stdout","time":0.699020319,"data":"mounted inputs:\n"}
+,{"stream_name":"stdout","time":0.725215506,"data":"  /kaggle/input/datasets\n"}
+,{"stream_name":"stdout","time":0.725236254,"data":"  /kaggle/input/datasets/crakashpreetham\n"}
+,{"stream_name":"stdout","time":0.725240815,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code\n"}
+,{"stream_name":"stdout","time":0.725244837,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/audit\n"}
+,{"stream_name":"stdout","time":0.725248549,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/audit/__init__.py\n"}
+,{"stream_name":"stdout","time":0.725251997,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/audit/float_ops.py\n"}
+,{"stream_name":"stdout","time":0.725255347,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data\n"}
+,{"stream_name":"stdout","time":0.725259009,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data/__init__.py\n"}
+,{"stream_name":"stdout","time":0.72526241,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data/cache\n"}
+,{"stream_name":"stdout","time":0.725266492,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data/cache/bpe_2048.json\n"}
+,{"stream_name":"stdout","time":0.725270909,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data/cache/tokens_2048.npz\n"}
+,{"stream_name":"stdout","time":0.725278898,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data/mnist.py\n"}
+,{"stream_name":"stdout","time":0.725282539,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/data/tinystories.py\n"}
+,{"stream_name":"stdout","time":0.725286847,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments\n"}
+,{"stream_name":"stdout","time":0.725291525,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/convex_problem.py\n"}
+,{"stream_name":"stdout","time":0.725296081,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m0_characterize.py\n"}
+,{"stream_name":"stdout","time":0.725300684,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m1_convex.py\n"}
+,{"stream_name":"stdout","time":0.725305987,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m1_sensitivity.py\n"}
+,{"stream_name":"stdout","time":0.725310259,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m1_spectrum.py\n"}
+,{"stream_name":"stdout","time":0.725314507,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m2_mnist.py\n"}
+,{"stream_name":"stdout","time":0.725319636,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m3_baseline.py\n"}
+,{"stream_name":"stdout","time":0.725324007,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m4_audit.py\n"}
+,{"stream_name":"stdout","time":0.725328805,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m5_ladder.py\n"}
+,{"stream_name":"stdout","time":0.725340577,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m5_lr_control.py\n"}
+,{"stream_name":"stdout","time":0.725345255,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m5_lr_seed3.py\n"}
+,{"stream_name":"stdout","time":0.725360655,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/repro.py\n"}
+,{"stream_name":"stdout","time":0.725373032,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/gpu\n"}
+,{"stream_name":"stdout","time":0.72541051,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/gpu/entry.py\n"}
+,{"stream_name":"stdout","time":0.725416123,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/models\n"}
+,{"stream_name":"stdout","time":0.725420409,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/models/__init__.py\n"}
+,{"stream_name":"stdout","time":0.725424645,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/models/quant_gpt.py\n"}
+,{"stream_name":"stdout","time":0.725429713,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/models/quant_mlp.py\n"}
+,{"stream_name":"stdout","time":0.725434313,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/optim\n"}
+,{"stream_name":"stdout","time":0.725439156,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/optim/__init__.py\n"}
+,{"stream_name":"stdout","time":0.725447794,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/optim/int_sgd.py\n"}
+,{"stream_name":"stdout","time":0.725452819,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant\n"}
+,{"stream_name":"stdout","time":0.725470585,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/__init__.py\n"}
+,{"stream_name":"stdout","time":0.725500287,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/config.py\n"}
+,{"stream_name":"stdout","time":0.72550586,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/error_feedback.py\n"}
+,{"stream_name":"stdout","time":0.725509994,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/quantizers.py\n"}
+,{"stream_name":"stdout","time":0.725519795,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/registry.py\n"}
+,{"stream_name":"stdout","time":0.725523431,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/round.py\n"}
+,{"stream_name":"stdout","time":0.725538196,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/scale.py\n"}
+,{"stream_name":"stdout","time":0.725540833,"data":"  /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/quant/ste.py\n"}
+,{"stream_name":"stdout","time":0.7256198,"data":"======================================================================\n"}
+,{"stream_name":"stdout","time":0.727075609,"data":"[repo] found at /kaggle/input/datasets/crakashpreetham/onebit-ladder-code\n"}
+,{"stream_name":"stdout","time":0.832346809,"data":"[cache] seeded 2 frozen-corpus files\n"}
+,{"stream_name":"stdout","time":5.853198336,"data":"[torch] 2.10.0+cu128 cuda=True Tesla T4\n"}
+,{"stream_name":"stdout","time":5.85325268,"data":"+ /usr/bin/python3 /kaggle/input/datasets/crakashpreetham/onebit-ladder-code/experiments/m5_ladder.py --steps 10000 --only R7_everything_pow2\n"}
+,{"stream_name":"stdout","time":9354.728293627,"data":"[sleep guard] keep-awake request NOT AVAILABLE -- scoped to this process, power plan untouched\n"}
+,{"stream_name":"stdout","time":9354.728351029,"data":"[m5] 1 configs x 3 seeds; 0 already done, 3 to run\n"}
+,{"stream_name":"stdout","time":9354.72835589,"data":"[m5] budget 20,480,000 tokens/run, threads=4\n"}
+,{"stream_name":"stdout","time":9354.728359761,"data":"\n"}
+,{"stream_name":"stdout","time":9354.728363794,"data":"  [1/3] R7_everything_pow2   seed0 ppl     8.98 froz 0.014 616.9 cpu-min (155 wall) ETA 5.2 h*\n"}
+,{"stream_name":"stdout","time":18609.998116222,"data":"  [2/3] R7_everything_pow2   seed1 ppl     9.06 froz 0.014 611.2 cpu-min (154 wall) ETA 2.6 h*\n"}
+,{"stream_name":"stdout","time":27623.909677385,"data":"  [3/3] R7_everything_pow2   seed2 ppl     9.23 froz 0.014 595.3 cpu-min (150 wall) ETA 0.0 h*\n"}
+,{"stream_name":"stdout","time":27623.910036554,"data":"\n"}
+,{"stream_name":"stdout","time":27623.910048248,"data":"done in 7.67 h -\u003e /kaggle/working/m5_ladder.csv\n"}
+,{"stream_name":"stdout","time":27625.517826847,"data":"[out] m5_ladder.csv  1.8 kB\n"}
+,{"stream_name":"stdout","time":27625.517860782,"data":"[out] m5_ladder_curves.csv  22.0 kB\n"}
+,{"stream_name":"stderr","time":27627.962567583,"data":"/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":27627.962866933,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":27628.193526348,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":27628.193550282,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":27628.83621014,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":27629.980765828,"data":"[NbConvertApp] Writing 285541 bytes to __results__.html\n"}
+]

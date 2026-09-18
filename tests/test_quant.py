@@ -360,3 +360,20 @@ def test_registry_passes_for_a_real_quantizer():
     rows = registry.dump_stats()
     assert len(rows) == 1 and rows[0]["changed_ever"] is True
     registry.reset()
+
+
+def test_pow2_ceil_changes_ternary_sparsity_not_just_the_scale():
+    """Pins the confound behind every pow2 ladder result. Rounding the ternary
+    scale UP to a power of two raises the zero threshold, so 'pow2 weights'
+    also means 'sparser weights' -- measured 31% -> 56% zeros at std 0.02. If
+    this ever stops holding (e.g. pow2_mode changes), the §2 correction in
+    RESULTS.md needs revisiting."""
+    torch.manual_seed(0)
+    W = torch.randn(576, 192) * 0.02
+    f = quantize(W, spec=QuantSpec(kind="ternary", granularity="tensor", calib="absmean"))
+    p = quantize(W, spec=QuantSpec(kind="ternary", granularity="tensor", calib="absmean",
+                                   scale_mode="pow2", pow2_mode="ceil"))
+    zf = (f.codes == 0).float().mean().item()
+    zp = (p.codes == 0).float().mean().item()
+    assert p.scale.item() > f.scale.item()
+    assert zp > zf + 0.10, f"ceil-pow2 should materially sparsify ternary: {zf:.3f} vs {zp:.3f}"

@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 BUDGET = 20_480_000
 
 #: directory -> device label. The label is what the normalization keys on.
-SOURCES = {".": "CPU", "gpu": "GPU", "gpu2": "GPU", "gpu3": "GPU"}
+SOURCES = {".": "CPU", "gpu": "GPU", "gpu2": "GPU", "gpu3": "GPU", "gpu4": "GPU"}
 
 #: ladder order, not alphabetical and not sorted by result
 ORDER = [

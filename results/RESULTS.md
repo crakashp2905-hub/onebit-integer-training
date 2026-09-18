@@ -36,8 +36,9 @@ baseline measured on the same device.
 | R2p9_act4 | 11.217 | +46.9% | 73.9% | GPU |
 | R2p95_act4_pow2 | 12.093 | +58.2% | 73.8% | CPU |
 | R3b_wgrad8 | 9.839 | +28.7% | 21.4% | CPU |
-| R6_attn8 *(n=2)* | 9.675 | +26.5% | 18.6% | CPU |
 | **R7_head8** | 9.735 | **+27.5%** | **14.8%** | GPU |
+| R6_attn8 → now n=3 | 9.697 | +26.8% | 18.6% | CPU |
+| R7_everything_pow2 ⚠ | 9.094 | +19.1% | 14.6% | GPU |
 | R5_shadow8ef | 10.143 | +32.8% | 21.4% | GPU |
 | R5_shadow8sr *(n=1)* | 10.210 | +33.7% | — | GPU |
 
@@ -74,23 +75,45 @@ so it can claim one forward matmul. R3 quantizes the *gradient*, which is an
 operand of **both** backward matmuls — and the backward pass is two thirds of a
 training step's arithmetic.
 
-### 2. Power-of-two scaling is free at 8 bits and costs ~8% at 4
+### 2. The pow2 results are confounded — correction
 
-The open question from the last write-up. Now measured on both sides:
+**⚠ Every pow2 conclusion in earlier versions of this file is withdrawn pending
+a control.** That covers "multiplier-free is free at 8 bits", "pow2 costs +7.7%
+at 4 bits", and R7_everything_pow2's +19.1%.
 
-| bits | float scales | pow2 scales | pow2 penalty |
-|---|---:|---:|---:|
-| 8 | 9.846 (+28.9%) | 9.259 (+21.2%, n=1) | none — pow2 was *better* |
-| 4 | 11.217 (+46.9%) | 12.093 (+58.2%) | **+7.7%** |
+R7_everything_pow2 came in at +19.1% (seeds 8.98–9.23), the best quantized
+config in the table and wholly below R7_head8 (9.70–9.79), which is the same
+config with float scales. A representation change should not *improve* loss by
+8 points, so it was treated as a bug first. The cause:
 
-So the constraint does eventually bite, and 4 bits is where it starts. But the
-original prediction — that *scale representation* would bind before *bit-width*
-— is still wrong, and now quantitatively so: dropping 8→4 bits costs **+18
-points** of penalty, while forcing the scales to shifts costs **+7.7%** on top
-of that. Bit-width is the dominant axis by more than a factor of two.
+`pow2_mode="ceil"` rounds the ternary scale β **up** to the next power of two.
+Ternary codes are `round(W/β)`, so a larger β raises the zero threshold.
+Measured on Gaussian weights:
 
-M0 predicted +25% at 8 bits growing to +68% at 3. The 8-bit half of that was
-wrong. The direction of growth was right.
+| weight std | β inflation | zeros, float β | zeros, pow2-ceil β |
+|---:|---:|---:|---:|
+| 0.0144 | ×1.36 | 31.0% | 41.3% |
+| 0.0200 | ×1.95 | 31.0% | **56.4%** |
+| 0.0300 | ×1.31 | 30.9% | 39.8% |
+| 0.0500 | ×1.56 | 30.9% | 46.6% |
+
+So every config with pow2 **weights** changed two things at once: how the scale
+is represented, and how sparse the ternary weights are. The sparsity change is
+large (up to +25 points), and it varies arbitrarily per tensor depending on
+where its absmean falls relative to a power of two. The loss differences can't
+be assigned to either change.
+
+Both directions are affected. At 8 bits, pow2 looked *better* (R2p5, R7_all),
+consistent with sparser ternary weights helping. At 4 bits, pow2 looked *worse*
+(+7.7%), and that difference is equally uninterpretable.
+
+**Still valid:** bit-width is expensive. R2p9_act4 at +46.9% vs R2_act8 at +28.9%
+is float-vs-float, with no pow2 involved.
+
+**Controls needed** (not yet run):
+- pow2 on activations only, float ternary β: isolates the representation effect
+- float ternary β × fixed 1.5: isolates the sparsity effect
+- pow2 with `round` instead of `ceil` for the weight scale
 
 ### 3. Latent weights are the one rung that is pure loss
 
@@ -329,7 +352,7 @@ One training step, batch 4 × ctx 128:
 | R5_shadow8ef | 1,097,981,976 | 21.4% | +32.8% |
 | R6_attn8 | 958,267,416 | 18.6% | +26.5% *(n=2)* |
 | R7_head8 | 758,975,000 | **14.8%** | **+27.5%** |
-| R7_everything_pow2 | 749,668,888 | 14.6% | *not run — kernel cancelled* |
+| R7_everything_pow2 | 749,668,888 | 14.6% | +19.1% ⚠ confounded, §2 |
 
 ### The ladder is upside down
 
@@ -398,9 +421,9 @@ rung's benefit but never overstate it.
 | Momentum may rescue RTN latent weights | **half right** — degraded but learning |
 | Parallelism would speed the sweep | **wrong** — memory-bandwidth-bound, 0.97× |
 | (unstated, and wrong) that the ladder's rungs cost roughly in proportion to what they buy | **wrong** — ternary buys 26% for +28.9%; everything else buys 59 more points for free |
-| Scale representation binds before bit-width — retested at 4 bits | **still wrong**, now quantitatively: 8→4 bits costs +18 points, pow2 costs +7.7% on top |
+| Scale representation binds before bit-width — retested at 4 bits | **untested** — every pow2 run is confounded by ternary sparsity (ceil inflates β ×1.3–1.95); see §2 |
 
-Three held, six wrong, one half. The failures cluster: every one was a case of
+Three held, five wrong, one half, one withdrawn as confounded. The failures cluster: every one was a case of
 generalizing from an instrument that could not support the generalization —
 a single spectrum, a single token budget, a single problem class.
 
@@ -408,10 +431,10 @@ a single spectrum, a single token budget, a single problem class.
 
 ## Open
 
-- **R7_everything_pow2.** The one config with no loss number: the Kaggle kernel
-  was cancelled (`CANCEL_ACKNOWLEDGED`) after delivering 6 of its 9 runs. It is
-  the all-pow2, all-rungs config at 14.6% — the cheapest point in the audit.
-- **R6_attn8 third seed**, still running locally (n=2 as reported).
+- **The pow2 controls in §2.** Every pow2 result is confounded until they run.
+- **R6p5_attn8_pow2, R6_attn4.** Running locally again, restarted after a
+  Windows restart (System event 1074, 03:15 on 2026-09-18) killed the job at
+  run 13/24. R6p5 attention-pow2 is *not* confounded (float ternary β).
 - **Attention backward.** R6 quantizes the forward QK^T and AV only, so the
   audit scores dQ/dK/dV as full FP. Roughly two thirds of attention's arithmetic
   is therefore still unclaimed, and the 14.8% figure is correspondingly
